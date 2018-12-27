@@ -18,7 +18,9 @@ import Language.Haskell.TH
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
   c <- countTypeNameArgs n
-  deriveArgDict' c n
+  if c >= 1
+    then deriveArgDict' (c-1) n
+    else error "deriveArgDict: named type doesn't appear to have a parameter."
 
 deriveArgDict' :: Word -> Name -> Q [Dec]
 deriveArgDict' numArgs n = do
@@ -45,7 +47,10 @@ deriveArgDict' numArgs n = do
 deriveArgDictV :: Name -> Q [Dec]
 deriveArgDictV n = do
   c <- countTypeNameArgs n
-  deriveArgDictV' c n
+  if c >= 1
+    then deriveArgDictV' (c-1) n
+    else error "deriveArgDictV: named type doesn't appear to have a parameter."
+
 
 deriveArgDictV' :: Word -> Name -> Q [Dec]
 deriveArgDictV' numArgs n = do
