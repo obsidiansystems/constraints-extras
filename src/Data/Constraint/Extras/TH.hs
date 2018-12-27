@@ -15,15 +15,10 @@ import Data.Constraint
 import Data.Semigroup
 import Language.Haskell.TH
 
-makeInstanceHead :: Name -> Word -> TypeQ
-makeInstanceHead n numArgs = go numArgs
-  where go 0 = conT n
-        go n = do
-          arg <- newName $ "arg" ++ show n
-          AppT <$> go (n - 1) <*> pure (VarT arg)
-
 deriveArgDict :: Name -> Q [Dec]
-deriveArgDict = deriveArgDict' 0
+deriveArgDict n = do
+  c <- countTypeNameArgs n
+  deriveArgDict' c n
 
 deriveArgDict' :: Word -> Name -> Q [Dec]
 deriveArgDict' numArgs n = do
@@ -48,7 +43,9 @@ deriveArgDict' numArgs n = do
     |]
 
 deriveArgDictV :: Name -> Q [Dec]
-deriveArgDictV = deriveArgDictV' 0
+deriveArgDictV n = do
+  c <- countTypeNameArgs n
+  deriveArgDictV' c n
 
 deriveArgDictV' :: Word -> Name -> Q [Dec]
 deriveArgDictV' numArgs n = do
@@ -69,6 +66,13 @@ deriveArgDictV' numArgs n = do
              argDictV = $(LamCaseE <$> matches n 'argDictV)
        |]
   return (d ++ ds)
+
+makeInstanceHead :: Name -> Word -> TypeQ
+makeInstanceHead n numArgs = go numArgs
+  where go 0 = conT n
+        go n = do
+          arg <- newName $ "arg" ++ show n
+          AppT <$> go (n - 1) <*> pure (VarT arg)
 
 matches :: Name -> Name -> Q [Match]
 matches n argDictName = do
@@ -97,4 +101,19 @@ gadtIndices n = do
       ForallC _ _ (GadtC _ _ (AppT (ConT _) (VarT _))) -> return []
       ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [typ]
       _ -> return []
-    a -> error $ "gadtResults: Unmatched 'Info': " <> show a
+    a -> error $ "gadtIndices: Unmatched 'Info': " <> show a
+
+-- Haruspication to determine the number of arguments of a named type.
+countTypeNameArgs :: Name -> Q Word
+countTypeNameArgs n = do
+  reify n >>= \case
+    TyConI (DataD _ _ explicitArgs mKind _ _) ->
+      return $ fromIntegral (length explicitArgs) + maybe 0 typeArity mKind
+    a -> error $ "countArgs: Unmatched 'Info': " <> show a
+
+-- Determine the arity of a function type, or zero otherwise.
+typeArity :: Type -> Word
+typeArity t = case t of
+  ForallT _ _ t -> typeArity t
+  AppT (AppT ArrowT _) t -> 1 + typeArity t
+  _ -> 0
