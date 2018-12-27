@@ -20,7 +20,7 @@ deriveArgDict n = do
   c <- countTypeNameArgs n
   if c >= 1
     then deriveArgDict' (c-1) n
-    else error "deriveArgDict: named type doesn't appear to have a parameter."
+    else error $ "deriveArgDict: type `" <> show n <> "' doesn't appear to have a parameter."
 
 deriveArgDict' :: Word -> Name -> Q [Dec]
 deriveArgDict' numArgs n = do
@@ -49,7 +49,7 @@ deriveArgDictV n = do
   c <- countTypeNameArgs n
   if c >= 1
     then deriveArgDictV' (c-1) n
-    else error "deriveArgDictV: named type doesn't appear to have a parameter."
+    else error $ "deriveArgDictV: type `" <> show n <> "' doesn't appear to have a parameter."
 
 
 deriveArgDictV' :: Word -> Name -> Q [Dec]
