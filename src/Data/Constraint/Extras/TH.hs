@@ -1,7 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
+module Data.Constraint.Extras.TH
+  ( deriveArgDict
+  , deriveArgDict'
+  , deriveArgDictV
+  , deriveArgDictV'
+  , gadtIndices
+  ) where
 
 import Data.Constraint.Extras
 import Control.Monad
@@ -9,8 +15,18 @@ import Data.Constraint
 import Data.Semigroup
 import Language.Haskell.TH
 
+makeInstanceHead :: Name -> Word -> TypeQ
+makeInstanceHead n numArgs = go numArgs
+  where go 0 = conT n
+        go n = do
+          arg <- newName $ "arg" ++ show n
+          AppT <$> go (n - 1) <*> pure (VarT arg)
+
 deriveArgDict :: Name -> Q [Dec]
-deriveArgDict n = do
+deriveArgDict = deriveArgDict' 0
+
+deriveArgDict' :: Word -> Name -> Q [Dec]
+deriveArgDict' numArgs n = do
   ts <- gadtIndices n
   c <- newName "c"
   g <- newName "g"
@@ -19,32 +35,37 @@ deriveArgDict n = do
       l = length xs
       constraints = foldl AppT (TupleT l) xs
       constraints' = foldl AppT (TupleT l) xs'
+  instHead <- makeInstanceHead n numArgs
   {-
   runIO $ putStrLn "Constraints:"
   runIO . putStrLn . pprint $ constraints'
   -}
-  [d| instance ArgDict $(pure $ ConT n) where
-        type ConstraintsFor  $(conT n) $(varT c) = $(pure constraints)
-        type ConstraintsFor' $(conT n) $(varT c) $(varT g) = $(pure constraints')
+  [d| instance ArgDict $(pure instHead) where
+        type ConstraintsFor  $(pure instHead) $(varT c) = $(pure constraints)
+        type ConstraintsFor' $(pure instHead) $(varT c) $(varT g) = $(pure constraints')
         argDict = $(LamCaseE <$> matches n 'argDict)
         argDict' = $(LamCaseE <$> matches n 'argDict')
     |]
 
 deriveArgDictV :: Name -> Q [Dec]
-deriveArgDictV n = do
+deriveArgDictV = deriveArgDictV' 0
+
+deriveArgDictV' :: Word -> Name -> Q [Dec]
+deriveArgDictV' numArgs n = do
   vs <- gadtIndices n
   c <- newName "c"
   g <- newName "g"
   let xs = map (\v -> AppT (VarT c) $ AppT v (VarT g)) vs
       l = length xs
       constraints = foldl AppT (TupleT l) xs
+  instHead <- makeInstanceHead n numArgs
   {-
   runIO $ putStrLn "Constraints:"
   runIO . putStrLn . pprint $ constraints'
   -}
   ds <- deriveArgDict n
-  d <- [d| instance ArgDictV $(pure $ ConT n) where
-             type ConstraintsForV $(conT n) $(varT c) $(varT g) = $(pure constraints)
+  d <- [d| instance ArgDictV $(pure instHead) where
+             type ConstraintsForV $(pure instHead) $(varT c) $(varT g) = $(pure constraints)
              argDictV = $(LamCaseE <$> matches n 'argDictV)
        |]
   return (d ++ ds)
