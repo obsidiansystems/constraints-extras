@@ -2,6 +2,8 @@
 
 ## Example usage:
 
+NB: This example can be built with `-pgmL markdown-unlit`.
+
 ```haskell
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -11,9 +13,7 @@
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# LANGUAGE ExistentialQuantification #-}
-module Test where
 
 import Data.Aeson
 import Data.Constraint.Forall
@@ -38,7 +38,7 @@ deriveArgDictV ''V
 data DSum k f = forall a. DSum (k a) (f a)
 
 -- Derive a ToJSON instance for our 'DSum'
-instance forall k f. 
+instance forall k f.
   ( Has' ToJSON k f -- Given a value of type (k a), we can obtain an instance (ToJSON (f a))
   , ForallF ToJSON k -- For any (a), we have an instance (ToJSON (k a))
   ) => ToJSON (DSum k f) where
@@ -56,4 +56,7 @@ instance (FromJSON (Some f), Has' FromJSON f g) => FromJSON (DSum f g) where
     Some (f :: f a) <- parseJSON jf
     g <- has' @FromJSON @g f (parseJSON jg)
     return $ DSum f g
+
+main :: IO ()
+main = return ()
 ```
