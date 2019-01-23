@@ -27,10 +27,12 @@ library
 
 executable readme
   build-depends: base >=4.9 && <4.12
+               , aeson
                , constraints >= 0.9 && < 0.11
                , constraints-extras
-               , aeson
+               , markdown-unlit
   main-is: README.lhs
+  ghc-options: -pgmL markdown-unlit -Wall -Werror
 
 source-repository head
   type:     git
