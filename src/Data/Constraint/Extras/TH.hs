@@ -25,13 +25,12 @@ deriveArgDict n = do
       l = length xs
       constraints = foldl AppT (TupleT l) xs
       constraints' = foldl AppT (TupleT l) xs'
-  {-
-  runIO $ putStrLn "Constraints:"
-  runIO . putStrLn . pprint $ constraints'
-  -}
-  [d| instance ArgDict $(pure $ ConT n) where
-        type ConstraintsFor  $(conT n) $(varT c) = $(pure constraints)
-        type ConstraintsFor' $(conT n) $(varT c) $(varT g) = $(pure constraints')
+  arity <- tyConArity n
+  tyVars <- replicateM (arity - 1) (newName "a")
+  let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
+  [d| instance ArgDict $(pure n') where
+        type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
+        type ConstraintsFor' $(pure n') $(varT c) $(varT g) = $(pure constraints')
         argDict = $(LamCaseE <$> matches n 'argDict)
         argDict' = $(LamCaseE <$> matches n 'argDict')
     |]
@@ -46,10 +45,6 @@ deriveArgDictV n = do
         Right v -> AppT (VarT c) $ AppT v (VarT g)
       l = length xs
       constraints = foldl AppT (TupleT l) xs
-  {-
-  runIO $ putStrLn "Constraints:"
-  runIO . putStrLn . pprint $ constraints'
-  -}
   ds <- deriveArgDict n
   d <- [d| instance ArgDictV $(pure $ ConT n) where
              type ConstraintsForV $(conT n) $(varT c) $(varT g) = $(pure constraints)
@@ -62,14 +57,12 @@ matches n argDictName = do
   x <- newName "x"
   reify n >>= \case
     TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \case
-      GadtC [name] _ (AppT (ConT _) (VarT _)) -> return $
-        [Match (ConP name [VarP x]) (NormalB $ AppE (VarE argDictName) (VarE x)) []]
       GadtC [name] _ _ -> return $
         [Match (RecP name []) (NormalB $ ConE 'Dict) []]
-      ForallC _ _ (GadtC [name] bts (AppT (ConT _) (VarT b))) -> do
+      ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
         ps <- forM bts $ \case
-          (_, AppT (ConT a) (VarT b')) | b == b' -> do
-            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [(ConT a)]
+          (_, AppT t (VarT b')) | b == b' -> do
+            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [t]
             return $ if hasArgDictInstance
               then Just x
               else Nothing
@@ -89,17 +82,28 @@ matches n argDictName = do
       a -> error $ "deriveArgDict matches: Unmatched 'Dec': " <> show a
     a -> error $ "deriveArgDict matches: Unmatched 'Info': " <> show a
 
+kindArity :: Kind -> Int
+kindArity = \case
+  ForallT _ _ t -> kindArity t
+  AppT (AppT ArrowT _) t -> 1 + kindArity t
+  SigT t _ -> kindArity t
+  ParensT t -> kindArity t
+  _ -> 0
+
+tyConArity :: Name -> Q Int
+tyConArity n = reify n >>= return . \case
+   TyConI (DataD _ _ ts mk _ _) -> fromMaybe 0 (fmap kindArity mk) + length ts
+   _ -> error $ "tyConArity: Supplied name reified to something other than a data declaration: " <> show n
+
 gadtIndices :: Name -> Q [Either Type Type]
-gadtIndices n = do
-  reify n >>= \case
-    TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \x -> case x of
-      GadtC _ _ (AppT (ConT _) (VarT _)) -> return []
-      GadtC _ _ (AppT _ typ) -> return [Right typ]
-      ForallC _ _ (GadtC _ bts (AppT (ConT _) (VarT _))) -> fmap concat $ forM bts $ \case
-        (_, AppT (ConT a) (VarT _)) -> do
-          hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [(ConT a)]
-          return $ if hasArgDictInstance then [Left (ConT a)] else []
-        _ -> return []
-      ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
+gadtIndices n = reify n >>= \case
+  TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \case
+    GadtC _ _ (AppT _ typ) -> return [Right typ]
+    ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
+      (_, AppT t (VarT _)) -> do
+        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [t]
+        return $ if hasArgDictInstance then [Left t] else []
       _ -> return []
-    a -> error $ "gadtResults: Unmatched 'Info': " <> show a
+    ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
+    _ -> return []
+  a -> error $ "gadtResults: Unmatched 'Info': " <> show a
