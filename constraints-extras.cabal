@@ -7,7 +7,6 @@ author: Cale Gibbard, Ali Abrar
 maintainer: maintainer@obsidian.systems
 copyright: Obsidian Systems LLC
 build-type: Simple
-extra-source-files: ChangeLog.md
 cabal-version: >=1.10
 
 library
