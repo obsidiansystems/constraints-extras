@@ -2,6 +2,8 @@
 
 ## Example usage:
 
+NB: This example can be built with `-pgmL markdown-unlit`.
+
 ```haskell
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
