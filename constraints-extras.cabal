@@ -1,5 +1,5 @@
 name: constraints-extras
-version: 0.2.3.0
+version: 0.2.3.1
 synopsis: Utility package for constraints
 description: Convenience functions and TH for working with constraints. See <https://github.com/obsidiansystems/constraints-extras/blob/develop/README.md README.md> for example usage.
 category: Constraints
@@ -10,6 +10,7 @@ maintainer: maintainer@obsidian.systems
 copyright: Obsidian Systems LLC
 build-type: Simple
 cabal-version: >=1.10
+extra-source-files: README.md
 
 library
   exposed-modules: Data.Constraint.Extras, Data.Constraint.Extras.TH
