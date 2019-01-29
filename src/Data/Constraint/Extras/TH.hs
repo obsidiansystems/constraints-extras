@@ -32,22 +32,8 @@ deriveArgDict n = do
         argDict = $(LamCaseE <$> matches n 'argDict)
     |]
 
-deriveArgDictV :: Name -> Q [Dec]
-deriveArgDictV n = do
-  vs <- gadtIndices n
-  c <- newName "c"
-  g <- newName "g"
-  let xs = flip map vs $ \case
-        Left t -> AppT (AppT (AppT (ConT ''ConstraintsForV) t) (VarT c)) (VarT g)
-        Right v -> AppT (VarT c) $ AppT v (VarT g)
-      l = length xs
-      constraints = foldl AppT (TupleT l) xs
-  ds <- deriveArgDict n
-  d <- [d| instance ArgDictV $(pure $ ConT n) where
-             type ConstraintsForV $(conT n) $(varT c) $(varT g) = $(pure constraints)
-             argDictV = $(LamCaseE <$> matches n 'argDictV)
-       |]
-  return (d ++ ds)
+{-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
+deriveArgDictV = deriveArgDict
 
 matches :: Name -> Name -> Q [Match]
 matches n argDictName = do

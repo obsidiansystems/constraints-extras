@@ -7,6 +7,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.Constraint.Extras where
 
@@ -33,14 +35,21 @@ argDict' :: forall f c g a. (ArgDict f, ConstraintsFor' f c g) => f a -> Dict (c
 argDict' tag = case argDict tag of
   (Dict :: Dict (ComposeC c g a)) -> Dict
 
--- | This places a tighter restriction on the kind of f, and so needs to be a separate class.
-class ArgDictV f where
-  type ConstraintsForV (f :: (k -> k') -> *) (c :: k' -> Constraint) (g :: k) :: Constraint
-  argDictV :: ConstraintsForV f c g => f v -> Dict (c (v g))
+class c h g => FlipC (c :: k -> k' -> Constraint) (g :: k') (h :: k)
+instance c h g => FlipC c g h
+
+type ConstraintsForV (f :: (k -> k') -> *) (c :: k' -> Constraint) (g :: k) = ConstraintsFor f (FlipC (ComposeC c) g)
+
+argDictV :: forall f c g v. (ArgDict f, ConstraintsForV f c g) => f v -> Dict (c (v g))
+argDictV tag = case argDict tag of
+  (Dict :: Dict (FlipC (ComposeC c) g a)) -> Dict
+
+{-# DEPRECATED ArgDictV "Just use 'ArgDict'" #-}
+type ArgDictV f = ArgDict f
 
 type Has (c :: k -> Constraint) f = (ArgDict f, ConstraintsFor f c)
 type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict f, ConstraintsFor' f c g)
-type HasV c f g = (ArgDictV f, ConstraintsForV f c g)
+type HasV c f g = (ArgDict f, ConstraintsForV f c g)
 
 has :: forall c f a r. (Has c f) => f a -> (c a => r) -> r
 has k r | (Dict :: Dict (c a)) <- argDict k = r
