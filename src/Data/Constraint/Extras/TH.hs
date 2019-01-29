@@ -24,15 +24,12 @@ deriveArgDict n = do
         Right t -> AppT (VarT c) (AppT (VarT g) t)
       l = length xs
       constraints = foldl AppT (TupleT l) xs
-      constraints' = foldl AppT (TupleT l) xs'
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
   [d| instance ArgDict $(pure n') where
         type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
-        type ConstraintsFor' $(pure n') $(varT c) $(varT g) = $(pure constraints')
         argDict = $(LamCaseE <$> matches n 'argDict)
-        argDict' = $(LamCaseE <$> matches n 'argDict')
     |]
 
 deriveArgDictV :: Name -> Q [Dec]

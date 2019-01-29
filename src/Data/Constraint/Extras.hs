@@ -11,6 +11,7 @@
 module Data.Constraint.Extras where
 
 import Data.Constraint
+import Data.Constraint.Compose
 import Data.Constraint.Forall
 
 -- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
@@ -24,9 +25,13 @@ import Data.Constraint.Forall
 -- want to go quite that far at the time of writing.
 class ArgDict f where
   type ConstraintsFor f (c :: k -> Constraint) :: Constraint
-  type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) :: Constraint
   argDict :: ConstraintsFor f c => f a -> Dict (c a)
-  argDict' :: ConstraintsFor' f c g => f a -> Dict (c (g a))
+
+type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
+
+argDict' :: forall f c g a. (ArgDict f, ConstraintsFor' f c g) => f a -> Dict (c (g a))
+argDict' tag = case argDict tag of
+  (Dict :: Dict (ComposeC c g a)) -> Dict
 
 -- | This places a tighter restriction on the kind of f, and so needs to be a separate class.
 class ArgDictV f where
