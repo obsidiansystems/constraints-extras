@@ -24,33 +24,16 @@ deriveArgDict n = do
         Right t -> AppT (VarT c) (AppT (VarT g) t)
       l = length xs
       constraints = foldl AppT (TupleT l) xs
-      constraints' = foldl AppT (TupleT l) xs'
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
   [d| instance ArgDict $(pure n') where
         type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
-        type ConstraintsFor' $(pure n') $(varT c) $(varT g) = $(pure constraints')
         argDict = $(LamCaseE <$> matches n 'argDict)
-        argDict' = $(LamCaseE <$> matches n 'argDict')
     |]
 
-deriveArgDictV :: Name -> Q [Dec]
-deriveArgDictV n = do
-  vs <- gadtIndices n
-  c <- newName "c"
-  g <- newName "g"
-  let xs = flip map vs $ \case
-        Left t -> AppT (AppT (AppT (ConT ''ConstraintsForV) t) (VarT c)) (VarT g)
-        Right v -> AppT (VarT c) $ AppT v (VarT g)
-      l = length xs
-      constraints = foldl AppT (TupleT l) xs
-  ds <- deriveArgDict n
-  d <- [d| instance ArgDictV $(pure $ ConT n) where
-             type ConstraintsForV $(conT n) $(varT c) $(varT g) = $(pure constraints)
-             argDictV = $(LamCaseE <$> matches n 'argDictV)
-       |]
-  return (d ++ ds)
+{-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
+deriveArgDictV = deriveArgDict
 
 matches :: Name -> Name -> Q [Match]
 matches n argDictName = do
