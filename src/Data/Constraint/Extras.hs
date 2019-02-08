@@ -14,6 +14,7 @@ module Data.Constraint.Extras where
 
 import Data.Constraint
 import Data.Constraint.Compose
+import Data.Constraint.Flip
 import Data.Constraint.Forall
 
 -- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
@@ -34,10 +35,6 @@ type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f 
 argDict' :: forall f c g a. (ArgDict f, ConstraintsFor' f c g) => f a -> Dict (c (g a))
 argDict' tag = case argDict tag of
   (Dict :: Dict (ComposeC c g a)) -> Dict
-
-class c h g => FlipC (c :: k -> k' -> Constraint) (g :: k') (h :: k)
-instance c h g => FlipC c g h
-
 type ConstraintsForV (f :: (k -> k') -> *) (c :: k' -> Constraint) (g :: k) = ConstraintsFor f (FlipC (ComposeC c) g)
 
 argDictV :: forall f c g v. (ArgDict f, ConstraintsForV f c g) => f v -> Dict (c (v g))
