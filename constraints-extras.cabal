@@ -13,7 +13,10 @@ cabal-version: >=1.10
 extra-source-files: README.md
 
 library
-  exposed-modules: Data.Constraint.Extras, Data.Constraint.Extras.TH
+  exposed-modules: Data.Constraint.Extras
+                 , Data.Constraint.Extras.TH
+                 , Data.Constraint.Compose
+  other-modules: Data.Constraint.Flip
   other-extensions: LambdaCase
                   , MultiParamTypeClasses
                   , QuasiQuotes
