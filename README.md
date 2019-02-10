@@ -33,7 +33,7 @@ data V :: (* -> *) -> * where
 
 deriveArgDict ''A
 deriveArgDict ''B
-deriveArgDictV ''V
+deriveArgDict ''V
 
 data DSum k f = forall a. DSum (k a) (f a)
 
