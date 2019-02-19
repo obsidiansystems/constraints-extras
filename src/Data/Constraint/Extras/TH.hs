@@ -76,13 +76,15 @@ tyConArity n = reify n >>= return . \case
 
 gadtIndices :: Name -> Q [Either Type Type]
 gadtIndices n = reify n >>= \case
-  TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \case
-    GadtC _ _ (AppT _ typ) -> return [Right typ]
-    ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
+  TyConI (DataD _ _ _ _ cons _) -> forM cons $ \case
+    GadtC _ _ (AppT _ typ) -> return $ Right typ
+    ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap (head . catMaybes) $ forM bts $ \case
       (_, AppT t (VarT _)) -> do
         hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [t]
-        return $ if hasArgDictInstance then [Left t] else []
-      _ -> return []
-    ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
-    _ -> return []
+        pure $ do
+          guard $ hasArgDictInstance
+          pure $ Left t
+      _ -> return Nothing
+    ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return $ Right typ
+    a -> error $ "gadtResults: Unmatched 'Dec': " <> show a
   a -> error $ "gadtResults: Unmatched 'Info': " <> show a
