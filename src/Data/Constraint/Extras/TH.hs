@@ -15,13 +15,9 @@ deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
   ts <- gadtIndices n
   c <- newName "c"
-  g <- newName "g"
   let xs = flip map ts $ \case
         Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
         Right t -> (AppT (VarT c) t)
-      xs' = flip map ts $ \case
-        Left t -> AppT (AppT (AppT (ConT ''ConstraintsFor') t) (VarT c)) (VarT g)
-        Right t -> AppT (VarT c) (AppT (VarT g) t)
       l = length xs
       constraints = foldl AppT (TupleT l) xs
   arity <- tyConArity n
