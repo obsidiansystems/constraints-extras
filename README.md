@@ -5,6 +5,7 @@
 NB: This example can be built with `-pgmL markdown-unlit`.
 
 ```haskell
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}

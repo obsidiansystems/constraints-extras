@@ -1,29 +1,32 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
 
+import Data.Constraint.Extras
 import Control.Monad
 import Data.Constraint
-import Data.Constraint.Extras
 import Data.Maybe
 import Language.Haskell.TH
 
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
   ts <- gadtIndices n
-  c <- newName "c"
-  let xs = flip map ts $ \case
-        Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
-        Right t -> (AppT (VarT c) t)
-      l = length xs
-      constraints = foldl AppT (TupleT l) xs
+  let xs :: [Type]
+      xs = flip map ts $ \case
+        Left t -> AppT (ConT 'SExpr_List) $ AppT (ConT ''Indices) t
+        Right t -> AppT (ConT 'SExpr_Atom) t
+      types = foldr (AppT . AppT (ConT '(:))) (ConT '[]) xs
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
   [d| instance ArgDict $(pure n') where
-        type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
+        type Indices $(pure n') = $(pure types)
         argDict = $(LamCaseE <$> matches n 'argDict)
     |]
 

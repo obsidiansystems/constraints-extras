@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
@@ -17,6 +18,10 @@ import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
 
+data SExpr t
+ = SExpr_Atom t
+ | SExpr_List [SExpr t]
+
 -- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
 -- select the appropriate type class dictionary from among a list of contenders based on a value of the type.
 -- There are a few different variations of this which we'd like to be able to support, and they're all implemented
@@ -27,8 +32,18 @@ import Data.Constraint.Forall
 -- applied didn't quite cut it when I tried). Some symbolic type-level application could do the trick, but I didn't
 -- want to go quite that far at the time of writing.
 class ArgDict f where
-  type ConstraintsFor f (c :: k -> Constraint) :: Constraint
+  type Indices f :: [SExpr k]
   argDict :: ConstraintsFor f c => f a -> Dict (c a)
+
+type family IndexConstraints (f :: k -> Constraint) (tys :: [SExpr  k]) :: Constraint where
+  IndexConstraints f '[] = ()
+  IndexConstraints f (ty ': tys) = (IndexConstraints' f ty, IndexConstraints f tys)
+
+type family IndexConstraints' (f :: k -> Constraint) (tys :: SExpr k) :: Constraint where
+  IndexConstraints' f ('SExpr_Atom ty) = f ty
+  IndexConstraints' f ('SExpr_List tys) = IndexConstraints f tys
+
+type ConstraintsFor f c = IndexConstraints c (Indices f)
 
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
 
