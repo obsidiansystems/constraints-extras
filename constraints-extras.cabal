@@ -16,6 +16,7 @@ library
   exposed-modules: Data.Constraint.Extras
                  , Data.Constraint.Extras.TH
                  , Data.Constraint.Compose
+                 , Data.Dependent.Map.Total
   other-modules: Data.Constraint.Flip
   other-extensions: LambdaCase
                   , MultiParamTypeClasses
