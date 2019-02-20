@@ -2,6 +2,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -22,6 +24,21 @@ data SExpr t
  = SExpr_Atom t
  | SExpr_List [SExpr t]
 
+data SExprCursor :: [SExpr k] -> k -> * where
+  SExprCursor_Zero
+    :: SExprCursorNode node ty
+    -> SExprCursor (node ': nodes) ty
+  SExprCursor_Succ
+    :: SExprCursor nodes ty
+    -> SExprCursor (node ': nodes) ty
+
+data SExprCursorNode :: SExpr k -> k -> * where
+  SExprCursorNode_Atom
+    :: SExprCursorNode ('SExpr_Atom ty) ty
+  SExprCursorNode_List
+    :: SExprCursor nodes ty
+    -> SExprCursorNode ('SExpr_List nodes) ty
+
 -- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
 -- select the appropriate type class dictionary from among a list of contenders based on a value of the type.
 -- There are a few different variations of this which we'd like to be able to support, and they're all implemented
@@ -33,7 +50,18 @@ data SExpr t
 -- want to go quite that far at the time of writing.
 class ArgDict f where
   type Indices f :: [SExpr k]
-  argDict :: ConstraintsFor f c => f a -> Dict (c a)
+  toIndex :: f a -> SExprCursor (Indices f) a
+  --fromIndex :: SExprCursor (Indices f) a -> f a
+  --isoIndex :: Iso' ((Indices f) a) (f a)
+
+argDict :: (ArgDict f, ConstraintsFor f c) => f a -> Dict (c a)
+argDict k = go $ toIndex k
+  where
+    go :: IndexConstraints c idxs => SExprCursor idxs a -> Dict (c a)
+    go = \case
+      SExprCursor_Zero SExprCursorNode_Atom -> Dict
+      SExprCursor_Zero (SExprCursorNode_List subCursor) -> go subCursor
+      SExprCursor_Succ cursor -> go cursor
 
 type family IndexConstraints (f :: k -> Constraint) (tys :: [SExpr  k]) :: Constraint where
   IndexConstraints f '[] = ()

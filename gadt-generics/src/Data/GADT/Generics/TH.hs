@@ -6,9 +6,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
+module Data.GADT.Generics.TH
+  ( deriveGGeneric
+  , gadtIndices
+  ) where
 
-import Data.Constraint.Extras
+import Data.GADT.Generics
 import Control.Lens
 import Control.Monad
 import Data.Foldable
@@ -16,8 +19,8 @@ import Data.Maybe
 import Data.Monoid (Endo (..))
 import Language.Haskell.TH
 
-deriveArgDict :: Name -> Q [Dec]
-deriveArgDict n = do
+deriveGGeneric :: Name -> Q [Dec]
+deriveGGeneric n = do
   ts <- gadtIndices n
   let xs :: [Type]
       xs = flip map ts $ \case
@@ -27,14 +30,10 @@ deriveArgDict n = do
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
-  [d| instance ArgDict $(pure n') where
+  [d| instance GGeneric $(pure n') where
         type Indices $(pure n') = $(pure types)
         toIndex = $(LamCaseE <$> matches n 'toIndex)
     |]
-
-{-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
-deriveArgDictV :: Name -> Q [Dec]
-deriveArgDictV = deriveArgDict
 
 matches :: Name -> Name -> Q [Match]
 matches n toIndexName = do
@@ -47,8 +46,8 @@ matches n toIndexName = do
       ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
         ps <- forM bts $ \case
           (_, AppT t (VarT b')) | b == b' -> do
-            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [t]
-            return $ if hasArgDictInstance
+            hasGGenericInstance <- not . null <$> reifyInstances ''GGeneric [t]
+            return $ if hasGGenericInstance
               then Just x
               else Nothing
           _ -> return Nothing
@@ -67,8 +66,8 @@ matches n toIndexName = do
                  []
       ForallC _ _ (GadtC [name] _ _) -> return $
         [Match (RecP name []) (NormalB $ succApp idx atom) []]
-      a -> error $ "deriveArgDict matches: Unmatched 'Dec': " <> show a
-    a -> error $ "deriveArgDict matches: Unmatched 'Info': " <> show a
+      a -> error $ "deriveGGeneric matches: Unmatched 'Dec': " <> show a
+    a -> error $ "deriveGGeneric matches: Unmatched 'Info': " <> show a
     where
       succApp idx = appEndo (fold $ succs idx) . AppE (ConE 'SExprCursor_Zero)
       succs idx = replicate idx $ Endo $ AppE $ ConE 'SExprCursor_Succ
@@ -94,9 +93,9 @@ gadtIndices n = reify n >>= \case
     GadtC _ _ (AppT _ typ) -> return $ Right typ
     ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap (head . catMaybes) $ forM bts $ \case
       (_, AppT t (VarT _)) -> do
-        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [t]
+        hasGGenericInstance <- fmap (not . null) $ reifyInstances ''GGeneric [t]
         pure $ do
-          guard $ hasArgDictInstance
+          guard $ hasGGenericInstance
           pure $ Left t
       _ -> return Nothing
     ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return $ Right typ
