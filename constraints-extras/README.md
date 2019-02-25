@@ -19,7 +19,7 @@ NB: This example can be built with `-pgmL markdown-unlit`.
 import Data.Aeson
 import Data.Constraint.Forall
 import Data.Constraint.Extras
-import Data.Constraint.Extras.TH
+import Data.GADT.Generics.TH
 
 data A :: * -> * where
   A_a :: A Int
@@ -32,9 +32,9 @@ data B :: * -> * where
 data V :: (* -> *) -> * where
   V_a :: A Int -> V A
 
-deriveArgDict ''A
-deriveArgDict ''B
-deriveArgDict ''V
+deriveGGeneric ''A
+deriveGGeneric ''B
+deriveGGeneric ''V
 
 data DSum k f = forall a. DSum (k a) (f a)
 

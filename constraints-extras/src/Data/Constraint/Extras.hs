@@ -19,25 +19,7 @@ import Data.Constraint
 import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
-
-data SExpr t
- = SExpr_Atom t
- | SExpr_List [SExpr t]
-
-data SExprCursor :: [SExpr k] -> k -> * where
-  SExprCursor_Zero
-    :: SExprCursorNode node ty
-    -> SExprCursor (node ': nodes) ty
-  SExprCursor_Succ
-    :: SExprCursor nodes ty
-    -> SExprCursor (node ': nodes) ty
-
-data SExprCursorNode :: SExpr k -> k -> * where
-  SExprCursorNode_Atom
-    :: SExprCursorNode ('SExpr_Atom ty) ty
-  SExprCursorNode_List
-    :: SExprCursor nodes ty
-    -> SExprCursorNode ('SExpr_List nodes) ty
+import Data.GADT.Generics
 
 -- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
 -- select the appropriate type class dictionary from among a list of contenders based on a value of the type.
@@ -48,11 +30,8 @@ data SExprCursorNode :: SExpr k -> k -> * where
 -- at the moment, it appears to require honest type level functions. (Closed type families which must be fully
 -- applied didn't quite cut it when I tried). Some symbolic type-level application could do the trick, but I didn't
 -- want to go quite that far at the time of writing.
-class ArgDict f where
-  type Indices f :: [SExpr k]
-  toIndex :: f a -> SExprCursor (Indices f) a
-  --fromIndex :: SExprCursor (Indices f) a -> f a
-  --isoIndex :: Iso' ((Indices f) a) (f a)
+{-# DEPRECATED ArgDict "Just use 'GGeneric'" #-}
+type ArgDict = GGeneric
 
 argDict :: (ArgDict f, ConstraintsFor f c) => f a -> Dict (c a)
 argDict k = go $ toIndex k
@@ -84,7 +63,7 @@ argDictV :: forall f c g v. (ArgDict f, ConstraintsForV f c g) => f v -> Dict (c
 argDictV tag = case argDict tag of
   (Dict :: Dict (FlipC (ComposeC c) g a)) -> Dict
 
-{-# DEPRECATED ArgDictV "Just use 'ArgDict'" #-}
+{-# DEPRECATED ArgDictV "Just use 'GGeneric'" #-}
 type ArgDictV f = ArgDict f
 
 type Has (c :: k -> Constraint) f = (ArgDict f, ConstraintsFor f c)
