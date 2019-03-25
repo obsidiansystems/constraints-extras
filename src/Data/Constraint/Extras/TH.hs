@@ -4,12 +4,12 @@
 module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
 
 import Data.Constraint.Extras
-import Control.Monad
 import Data.Constraint
+import Data.Either
 import Data.Maybe
+import Control.Monad
 import Language.Haskell.TH
 
-import Data.Either
 
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
@@ -58,8 +58,8 @@ matches n argDictName = do
             in [Match (ConP name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
       ForallC _ _ (GadtC [name] _ _) -> return $
         [Match (RecP name []) (NormalB $ ConE 'Dict) []]
-      a -> error $ "deriveArgDict matches: Unmatched 'Dec': " <> show a
-    a -> error $ "deriveArgDict matches: Unmatched 'Info': " <> show a
+      a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
+    a -> error $ "deriveArgDict matches: Unmatched 'Info': " ++ show a
 
 kindArity :: Kind -> Int
 kindArity = \case
@@ -72,7 +72,7 @@ kindArity = \case
 tyConArity :: Name -> Q Int
 tyConArity n = reify n >>= return . \case
    TyConI (DataD _ _ ts mk _ _) -> fromMaybe 0 (fmap kindArity mk) + length ts
-   _ -> error $ "tyConArity: Supplied name reified to something other than a data declaration: " <> show n
+   _ -> error $ "tyConArity: Supplied name reified to something other than a data declaration: " ++ show n
 
 gadtIndices :: Name -> Q [Either Type Type]
 gadtIndices n = reify n >>= \case
@@ -85,4 +85,4 @@ gadtIndices n = reify n >>= \case
       _ -> return []
     ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
     _ -> return []
-  a -> error $ "gadtResults: Unmatched 'Info': " <> show a
+  a -> error $ "gadtResults: Unmatched 'Info': " ++ show a
