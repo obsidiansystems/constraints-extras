@@ -12,6 +12,8 @@ NB: This example can be built with `-pgmL markdown-unlit`.
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
