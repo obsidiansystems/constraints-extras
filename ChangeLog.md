@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## 0.3.0.1 - 2019-05-17
+
+* Drop markdown-unlit in favor of using regular "Bird"-style LHS to avoid some cross-compilation problems
+
 ## 0.3 - 2019-05-16
 
 * Added a parameter for the type class, to allow for custom not-fully-polymorphic instances of ArgDict in cases where e.g. your key type contains dictionaries for specific classes. You will now need FlexibleInstances, MultiParamTypeClasses for the instances created by deriveArgDict.
