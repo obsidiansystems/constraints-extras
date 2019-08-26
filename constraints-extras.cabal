@@ -10,6 +10,8 @@ maintainer: maintainer@obsidian.systems
 copyright: Obsidian Systems LLC
 build-type: Simple
 cabal-version: >=2.0
+tested-with:
+  GHC  ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5
 extra-source-files: README.md
                     ChangeLog.md
 
