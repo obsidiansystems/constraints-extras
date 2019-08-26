@@ -1,4 +1,4 @@
-constraints-extras
+constraints-extras [![travis-ci](https://api.travis-ci.org/obsidiansystems/constraints-extras.svg?branch=develop)](https://travis-ci.org/obsidiansystems/constraints-extras)
 ==================
 
 Example usage:
