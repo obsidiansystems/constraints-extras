@@ -10,10 +10,11 @@ import Data.Maybe
 import Control.Monad
 import Language.Haskell.TH
 
+
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
+  ts <- gadtIndices n
   c <- newName "c"
-  ts <- gadtIndices c n
   let xs = flip map ts $ \case
         Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
         Right t -> (AppT (VarT c) t)
@@ -22,17 +23,17 @@ deriveArgDict n = do
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
-  [d| instance ArgDict $(varT c) $(pure n') where
+  [d| instance ArgDict $(pure n') where
         type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
-        argDict = $(LamCaseE <$> matches c n 'argDict)
+        argDict = $(LamCaseE <$> matches n 'argDict)
     |]
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
 deriveArgDictV :: Name -> Q [Dec]
 deriveArgDictV = deriveArgDict
 
-matches :: Name -> Name -> Name -> Q [Match]
-matches c n argDictName = do
+matches :: Name -> Name -> Q [Match]
+matches n argDictName = do
   x <- newName "x"
   reify n >>= \case
     TyConI (DataD _ _ _ _ constrs _) -> fmap concat $ forM constrs $ \case
@@ -41,7 +42,7 @@ matches c n argDictName = do
       ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
         ps <- forM bts $ \case
           (_, AppT t (VarT b')) | b == b' -> do
-            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [VarT c, t]
+            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [t]
             return $ if hasArgDictInstance
               then Just x
               else Nothing
@@ -74,15 +75,15 @@ tyConArity n = reify n >>= return . \case
    TyConI (DataD _ _ ts mk _ _) -> fromMaybe 0 (fmap kindArity mk) + length ts
    _ -> error $ "tyConArity: Supplied name reified to something other than a data declaration: " ++ show n
 
-gadtIndices :: Name -> Name -> Q [Either Type Type]
-gadtIndices c n = reify n >>= \case
+gadtIndices :: Name -> Q [Either Type Type]
+gadtIndices n = reify n >>= \case
   TyConI (DataD _ _ _ _ constrs _) -> fmap concat $ forM constrs $ \case
     GadtC _ _ (AppT _ typ) -> return [Right typ]
     ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
       (_, AppT t (VarT _)) -> do
-        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [VarT c, t]
+        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [t]
         return $ if hasArgDictInstance then [Left t] else []
       _ -> return []
     ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
     _ -> return []
-  a -> error $ "gadtIndices: Unmatched 'Info': " ++ show a
+  a -> error $ "gadtResults: Unmatched 'Info': " ++ show a

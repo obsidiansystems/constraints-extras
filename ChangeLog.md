@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## unreleased 2019-09-11
+
+* Remove extra parameter added in 0.3. We use a forall constraint instead to solve the problem.
+
 ## 0.3.0.1 - 2019-05-17
 
 * Drop markdown-unlit in favor of using regular "Bird"-style LHS to avoid some cross-compilation problems
