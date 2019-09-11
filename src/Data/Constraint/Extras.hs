@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -28,9 +29,17 @@ import Data.Constraint.Forall
 -- want to go quite that far at the time of writing.
 class ArgDict f where
   type ConstraintsFor f (c :: k -> Constraint) :: Constraint
-  argDict :: ConstraintsFor f c => f a -> Dict (c a)
+  argDictAll :: f a -> Dict (Extract f a)
 
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
+
+-- Helper class to avoid impredicative type
+class (ArgDict f, forall c. ConstraintsFor f c => c a) => Extract f a
+instance (ArgDict f, forall c. ConstraintsFor f c => c a) => Extract f a
+
+argDict :: forall f c a. (ArgDict f, ConstraintsFor f c) => f a -> Dict (c a)
+argDict tag = case argDictAll tag of
+  (Dict :: Dict (Extract f a)) -> Dict
 
 argDict' :: forall f c g a. (ArgDict f, ConstraintsFor' f c g) => f a -> Dict (c (g a))
 argDict' tag = case argDict tag of
@@ -48,6 +57,9 @@ type Has (c :: k -> Constraint) f = (ArgDict f, ConstraintsFor f c)
 type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict f, ConstraintsFor' f c g)
 type HasV c f g = (ArgDict f, ConstraintsForV f c g)
 
+hasAll :: forall f a r. ArgDict f => f a -> ((forall c. Has c f => c a) => r) -> r
+hasAll k r | (Dict :: Dict (Extract f a)) <- argDictAll k = r
+
 has :: forall c f a r. (Has c f) => f a -> (c a => r) -> r
 has k r | (Dict :: Dict (c a)) <- argDict k = r
 
@@ -63,4 +75,3 @@ whichever r = r \\ (instF :: ForallF c t :- c (t a))
 -- | Allows explicit specification of constraint implication
 class Implies1 c d where
   implies1 :: c a :- d a
-

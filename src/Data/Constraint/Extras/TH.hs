@@ -25,7 +25,7 @@ deriveArgDict n = do
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
   [d| instance ArgDict $(pure n') where
         type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
-        argDict = $(LamCaseE <$> matches n 'argDict)
+        argDictAll = $(LamCaseE <$> matches n 'argDictAll)
     |]
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
@@ -56,7 +56,9 @@ matches n argDictName = do
                     Nothing -> WildP : rest done
                     Just _ -> VarP v : rest True
                 pat = foldr patf (const []) ps False
-            in [Match (ConP name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
+                eta = CaseE (AppE (VarE argDictName) (VarE v))
+                  [Match (RecP 'Dict []) (NormalB $ ConE 'Dict) []]
+            in [Match (ConP name pat) (NormalB eta) []]
       ForallC _ _ (GadtC [name] _ _) -> return $
         [Match (RecP name []) (NormalB $ ConE 'Dict) []]
       a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
