@@ -160,11 +160,11 @@ We can get out `Ord a`:
 
 and things derivable from it:
 
-> useThisOrdSuperclass :: WithOrd a -> a -> a -> Bool
-> useThisOrdSuperclass wo x y = has @Eq wo $ x == y
-
-> useThisOrdImplication :: WithOrd a -> [a] -> [a] -> Bool
-> useThisOrdImplication wo x y = has @Eq wo $ x == y
+> useThisOrdImplication :: WithOrd a -> [a] -> [a] -> (Bool, Bool)
+> useThisOrdImplication wo x y =
+>  ( has @Ord wo $ x == y      -- implicit way
+>  , has' @Eq @[] wo $ x == y  -- explicit way
+>  )
 
 Oh, and let's make this README build
 
