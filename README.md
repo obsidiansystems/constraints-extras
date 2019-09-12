@@ -124,6 +124,33 @@ Even in when we have no "slack" (instances beyond what `Has` requires):
 > minimalWitness :: Dict (Has Minimal SimpleExpr)
 > minimalWitness = Dict
 
+We can also hand-write instances which take advantage of constructor's dictionaries
+
+> data WithOrd a where
+>   WithOrd :: Ord a => WithOrd a
+>
+> -- class to avoid impredicativity
+> class (forall a. Ord a => c a) => ConstraintsForWithOrd c
+> instance (forall a. Ord a => c a) => ConstraintsForWithOrd c
+>
+> instance ArgDict WithOrd where
+>   type ConstraintsFor WithOrd c = ConstraintsForWithOrd c
+>   argDictAll WithOrd = Dict
+
+Now we can use the constructor dictionary to discharge constraints.
+We can get out `Ord a`:
+
+> useThisOrd :: WithOrd a -> a -> a -> Ordering
+> useThisOrd wo x y = has @Ord wo $ x `compare` y
+
+and things derivable from it:
+
+> useThisOrdSuperclass :: WithOrd a -> a -> a -> Bool
+> useThisOrdSuperclass wo x y = has @Eq wo $ x == y
+
+> useThisOrdImplication :: WithOrd a -> [a] -> [a] -> Bool
+> useThisOrdImplication wo x y = has @Eq wo $ x == y
+
 Oh, and let's make this README build
 
 > main :: IO ()
