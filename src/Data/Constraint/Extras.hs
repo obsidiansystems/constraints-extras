@@ -18,16 +18,24 @@ import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
 
--- | Morally, this class is for GADTs whose indices can be finitely enumerated. It provides operations which will
--- select the appropriate type class dictionary from among a list of contenders based on a value of the type.
--- There are a few different variations of this which we'd like to be able to support, and they're all implemented
--- in the same fashion at the term level, by pattern matching on the constructors of the GADT, and producing Dict
--- as the result.
--- It would be nice to have some way to stop the proliferation of these variants and unify the existing ones, but
--- at the moment, it appears to require honest type level functions. (Closed type families which must be fully
--- applied didn't quite cut it when I tried). Some symbolic type-level application could do the trick, but I didn't
--- want to go quite that far at the time of writing.
-class ArgDict f where
+-- | Morally, this class is for GADTs whose indices can be enumerated. It
+-- provides operations which will select the appropriate type class dictionary
+-- from among a list of contenders based on a value of the type.  There are a
+-- few different variations of this which we'd like to be able to support, and
+-- they're all implemented in the same fashion at the term level, by pattern
+-- matching on the constructors of the GADT, and producing Dict as the result.
+--
+-- The class constraint is there to enforce the law that '@ConstraintsFor@ X'
+-- only enumarates the indices of '@X@'. In the most general case, all types are
+-- possible GADT indices, so we should always be able to '@ConstraintsFor@ X'
+-- from 'forall a. c a'.
+--
+-- It would be nice to have some way to stop the proliferation of these variants
+-- and unify the existing ones, but at the moment, it appears to require honest
+-- type level functions. (Closed type families which must be fully applied
+-- didn't quite cut it when I tried). Some symbolic type-level application could
+-- do the trick, but I didn't want to go quite that far at the time of writing.
+class (forall c. (forall a. c a) => ConstraintsFor f c) => ArgDict f where
   type ConstraintsFor f (c :: k -> Constraint) :: Constraint
   argDictAll :: f a -> Dict (Extract f a)
 
