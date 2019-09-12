@@ -124,7 +124,7 @@ Even in when we have no "slack" (instances beyond what `Has` requires):
 > minimalWitness :: Dict (Has Minimal SimpleExpr)
 > minimalWitness = Dict
 
-The funny "Leibtnitz-style" `forall c'` is so fancier things than Minimal
+The funny "Leibnitz-style" `forall c'` is so fancier things than Minimal
 (which also might not be satisfied for other args) also work:
 
 > class MinimalPing a
