@@ -26,7 +26,7 @@ import Data.Constraint.Forall
 -- matching on the constructors of the GADT, and producing Dict as the result.
 --
 -- The class constraint is there to enforce the law that '@ConstraintsFor@ X'
--- only enumarates the indices of '@X@'. In the most general case, all types are
+-- only enumerates the indices of '@X@'. In the most general case, all types are
 -- possible GADT indices, so we should always be able to '@ConstraintsFor@ X'
 -- from 'forall a. c a'.
 --
