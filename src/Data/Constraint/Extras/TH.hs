@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+
 module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
 
-import Data.Constraint.Extras
 import Data.Constraint
-import Data.Either
+import Data.Constraint.Extras
 import Data.Maybe
 import Control.Monad
 import Language.Haskell.TH
@@ -28,13 +28,14 @@ deriveArgDict n = do
     |]
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
+deriveArgDictV :: Name -> Q [Dec]
 deriveArgDictV = deriveArgDict
 
 matches :: Name -> Name -> Name -> Q [Match]
 matches c n argDictName = do
   x <- newName "x"
   reify n >>= \case
-    TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \case
+    TyConI (DataD _ _ _ _ constrs _) -> fmap concat $ forM constrs $ \case
       GadtC [name] _ _ -> return $
         [Match (RecP name []) (NormalB $ ConE 'Dict) []]
       ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
@@ -75,7 +76,7 @@ tyConArity n = reify n >>= return . \case
 
 gadtIndices :: Name -> Name -> Q [Either Type Type]
 gadtIndices c n = reify n >>= \case
-  TyConI (DataD _ _ _ _ cons _) -> fmap concat $ forM cons $ \case
+  TyConI (DataD _ _ _ _ constrs _) -> fmap concat $ forM constrs $ \case
     GadtC _ _ (AppT _ typ) -> return [Right typ]
     ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
       (_, AppT t (VarT _)) -> do
