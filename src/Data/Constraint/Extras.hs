@@ -42,8 +42,8 @@ class (forall c. (forall a. c a) => ConstraintsFor f c) => ArgDict f where
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
 
 -- Helper class to avoid impredicative type
-class (ArgDict f, forall c. ConstraintsFor f c => c a) => Extract f a
-instance (ArgDict f, forall c. ConstraintsFor f c => c a) => Extract f a
+class (forall c. ConstraintsFor f c => c a) => Extract f a
+instance (forall c. ConstraintsFor f c => c a) => Extract f a
 
 argDict :: forall f c a. (ArgDict f, ConstraintsFor f c) => f a -> Dict (c a)
 argDict tag = case argDictAll tag of
