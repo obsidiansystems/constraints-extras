@@ -7,11 +7,13 @@ license: BSD3
 license-file: LICENSE
 author: Cale Gibbard, Ali Abrar
 maintainer: maintainer@obsidian.systems
+homepage: https://github.com/obsidiansystems/constraints-extras
+bug-reports: https://github.com/obsidiansystems/constraints-extras/issues
 copyright: Obsidian Systems LLC
 build-type: Simple
 cabal-version: 2.0
 tested-with:
-  GHC  ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5
+  GHC  ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.1
 extra-source-files: README.md
                     ChangeLog.md
 
