@@ -7,6 +7,8 @@ license: BSD3
 license-file: LICENSE
 author: Cale Gibbard, Ali Abrar
 maintainer: maintainer@obsidian.systems
+homepage: https://github.com/obsidiansystems/constraints-extras
+bug-reports: https://github.com/obsidiansystems/constraints-extras/issues
 copyright: Obsidian Systems LLC
 build-type: Simple
 cabal-version: 2.0
