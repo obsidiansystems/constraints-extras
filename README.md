@@ -4,6 +4,7 @@ constraints-extras [![travis-ci](https://api.travis-ci.org/obsidiansystems/const
 Example usage:
 --------------
 
+```haskell
 > {-# LANGUAGE ConstraintKinds #-}
 > {-# LANGUAGE ExistentialQuantification #-}
 > {-# LANGUAGE FlexibleContexts #-}
@@ -29,32 +30,43 @@ Example usage:
 > import Data.Constraint.Extras
 > import Data.Constraint.Extras.TH
 >
+```
 
 A "simple" GADT.
 
+```haskell
 > data A :: * -> * where
 >   A_a :: A Int
 >   A_b :: Int -> A ()
 >
 > deriveArgDict ''A
+```
 
 A GADT which uses `A`.
 
+
+```haskell
 > data B :: * -> * where
 >   B_a :: A a -> A a -> B a
 >   B_x :: Int -> B Int
 >
 > deriveArgDict ''B
+```
 
 A GADT which has a non-`Type` parameter.
 
+
+```haskell
 > data V :: (* -> *) -> * where
 >   V_a :: A Int -> V A
 >
 > deriveArgDict ''V
+```
 
 Now let's actually use them
 
+
+```haskell
 > data DSum k f = forall a. DSum (k a) (f a)
 >
 > -- Derive a ToJSON instance for our 'DSum'
@@ -76,9 +88,12 @@ Now let's actually use them
 >     Some (f :: f a) <- parseJSON jf
 >     g <- has' @FromJSON @g f (parseJSON jg)
 >     return $ DSum f g
+```
 
 We can hand-write an instance for there being non-finite indices.
 
+
+```haskell
 > data SimpleExpr :: * -> * where
 >   SimpleExpr_BoolLit :: Bool -> SimpleExpr Bool
 >   SimpleExpr_IntLit :: Int -> SimpleExpr Int
@@ -105,28 +120,41 @@ We can hand-write an instance for there being non-finite indices.
 >         SimpleExpr_BoolLit _ -> Dict
 >         SimpleExpr_IntLit _ -> Dict
 >         SimpleExpr_ListLit h _ -> hasAll h Dict
+```
 
 We have the instances we want:
 
+
+```haskell
 > abstractConstraintWitnesses :: Has c SimpleExpr => Dict (c Int, c Bool, c [Int], c [Bool], c [[Int]], c [[Bool]])
 > abstractConstraintWitnesses = Dict
+```
 
+
+```haskell
 > concreteClassSmokeTest :: Dict (Has Show SimpleExpr)
 > concreteClassSmokeTest = Dict
+```
 
 Even in when we have no "slack" (instances beyond what `Has` requires):
 
+
+```haskell
 > class Minimal a
 > instance Minimal Int
 > instance Minimal Bool
 > instance Minimal a => Minimal [a]
+```
 
+```haskell
 > minimalWitness :: Dict (Has Minimal SimpleExpr)
 > minimalWitness = Dict
 
 The funny "Leibnitz-style" `forall c'` is so fancier things than Minimal
 (which also might not be satisfied for other args) also work:
 
+
+```haskell
 > class MinimalPing a
 > class MinimalPong a
 > instance MinimalPing Int
@@ -138,9 +166,11 @@ The funny "Leibnitz-style" `forall c'` is so fancier things than Minimal
 
 > minimalPingPongWitness :: Dict (Has MinimalPing SimpleExpr, Has MinimalPong SimpleExpr)
 > minimalPingPongWitness = Dict
+```
 
 We can also hand-write instances which take advantage of constructor's dictionaries
 
+```haskell
 > data WithOrd a where
 >   WithOrd :: Ord a => WithOrd a
 >
@@ -151,22 +181,32 @@ We can also hand-write instances which take advantage of constructor's dictionar
 > instance ArgDict WithOrd where
 >   type ConstraintsFor WithOrd c = ConstraintsForWithOrd c
 >   argDictAll WithOrd = Dict
+```
 
 Now we can use the constructor dictionary to discharge constraints.
 We can get out `Ord a`:
 
+
+```haskell
 > useThisOrd :: WithOrd a -> a -> a -> Ordering
 > useThisOrd wo x y = has @Ord wo $ x `compare` y
+```
 
 and things derivable from it:
 
+
+```haskell
 > useThisOrdImplication :: WithOrd a -> [a] -> [a] -> (Bool, Bool)
 > useThisOrdImplication wo x y =
 >  ( has @Ord wo $ x == y      -- implicit way
 >  , has' @Eq @[] wo $ x == y  -- explicit way
 >  )
+```
 
 Oh, and let's make this README build
 
+
+```haskell
 > main :: IO ()
 > main = return ()
+```
