@@ -37,6 +37,7 @@ module Data.Constraint.Extras
     -- * Bringing instances into scope
   , Has
   , has
+  , hasAll
   , Has'
   , has'
   , HasV
@@ -54,7 +55,7 @@ import Data.Constraint.Flip
 import Data.Constraint.Forall
 import Data.Kind
 
--- | Morally, this class is for GADTs whose indices can be finitely
+-- | Morally, this class is for GADTs whose indices can be recursively
 -- enumerated. An @'ArgDict' c f@ instance allows us to do two things:
 --
 -- 1. 'ConstraintsFor' requests the set of constraints @c a@ for all
@@ -66,15 +67,21 @@ import Data.Kind
 -- of this class.
 --
 -- The class constraint is there to enforce the law that '@ConstraintsFor@ X'
--- only enumerates the indices of '@X@'. In the most general case, all types are
--- possible GADT indices, so we should always be able to '@ConstraintsFor@ X'
--- from 'forall a. c a'.
+-- *only* enumerates the indices of '@X@'. In the most general case, all types
+-- are possible GADT indices, so we should always be able to '@ConstraintsFor@
+-- X' from 'forall a. c a'.
 class (forall c. (forall a. c a) => ConstraintsFor f c) => ArgDict (f :: k -> Type) where
   -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
   --
   -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
   type ConstraintsFor f (c :: k -> Constraint) :: Constraint
 
+  -- | Use an @f a@ to select a "function dictionary" demonstrating
+  -- @ConstraintsFor f c@ contains @c a@.
+  --
+  -- @argDict@ is sufficient for most tasks, but this is slightly more powerful
+  -- in that this discharges the quantified constraints which are useful when
+  -- the GADT indices are not finite.
   argDictAll :: f a -> Dict (Extract f a)
 
 -- | \"Primed\" variants (@ConstraintsFor'@, 'argDict'', 'Has'',
@@ -126,6 +133,10 @@ type Has (c :: k -> Constraint) f = (ArgDict f, ConstraintsFor f c)
 type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict f, ConstraintsFor' f c g)
 type HasV c f g = (ArgDict f, ConstraintsForV f c g)
 
+-- | More powerful version of @has@.
+--
+-- As @has@ is to @argDict@, so @hasAll@ is to @argDictAll@. See the
+-- documentation for @argDictAll@ for why one might need this.
 hasAll :: forall f a r. ArgDict f => f a -> ((forall c. Has c f => c a) => r) -> r
 hasAll k r | (Dict :: Dict (Extract f a)) <- argDictAll k = r
 
