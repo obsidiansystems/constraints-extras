@@ -67,7 +67,7 @@ class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
   -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
   --
   -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
-  type ConstraintsFor f (c :: k -> Constraint) :: Constraint
+  type ConstraintsFor f c :: Constraint
 
   -- | Use an @f a@ to select a specific dictionary from @ConstraintsFor f c@.
   --
