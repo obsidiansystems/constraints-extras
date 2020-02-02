@@ -7,11 +7,13 @@ license: BSD3
 license-file: LICENSE
 author: Cale Gibbard, Ali Abrar
 maintainer: maintainer@obsidian.systems
+homepage: https://github.com/obsidiansystems/constraints-extras
+bug-reports: https://github.com/obsidiansystems/constraints-extras/issues
 copyright: Obsidian Systems LLC
 build-type: Simple
 cabal-version: 2.0
 tested-with:
-  GHC  ==8.6.5
+  GHC  ==8.6.5 || ==8.8.1
 extra-source-files: README.md
                     ChangeLog.md
 
@@ -30,18 +32,18 @@ library
                   , TypeOperators
                   , ConstraintKinds
                   , TemplateHaskell
-  build-depends: base >=4.9 && <4.13
-               , constraints >= 0.9 && < 0.11
-               , template-haskell >=2.11 && <2.15
+  build-depends: base >=4.9 && <4.14
+               , constraints >= 0.9 && < 0.12
+               , template-haskell >=2.11 && <2.16
   hs-source-dirs:  src
   default-language: Haskell2010
 
 executable readme
   if !flag(build-readme)
     buildable: False
-  build-depends: base >=4.9 && <4.13
+  build-depends: base >=4.9 && <4.14
                , aeson
-               , constraints >= 0.9 && < 0.11
+               , constraints >= 0.9 && < 0.12
                , constraints-extras
   main-is: README.lhs
   ghc-options: -Wall -optL -q
