@@ -23,9 +23,9 @@
 -- >
 -- > $(deriveArgDict ''Tag)
 --
--- The constructors of @Tag@ mean that a type variable @a@ in @Tag a@ must
--- come from the set { @Int@, @Bool@}. We call this the "set of types @a@ that
--- could be applied to @Tag@".
+-- The constructors of @Tag@ mean that a type variable @a@ in @Tag a@
+-- must come from the set { @Int@, @Bool@ }. We call this the "set of
+-- types @a@ that could be applied to @Tag@".
 module Data.Constraint.Extras
   ( -- * The ArgDict typeclass
     ArgDict(..)
@@ -80,7 +80,7 @@ class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
 -- data structures parameterised by something of kind @(x -> Type) ->
 -- Type@, like in the @dependent-sum@ and @dependent-map@ libraries.
 --
--- > ConstraintsFor' Tag Show Identity = (Show (Identity Int), Show (Identity Bool)
+-- > ConstraintsFor' Tag Show Identity = (Show (Identity Int), Show (Identity Bool))
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
 
 -- | Get a dictionary for a specific @g a@, using a value of type @f a@.
