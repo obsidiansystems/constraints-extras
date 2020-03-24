@@ -22,7 +22,7 @@ library
   exposed-modules: Data.Constraint.Extras
                  , Data.Constraint.Extras.TH
                  , Data.Constraint.Compose
-  other-modules: Data.Constraint.Flip
+                 , Data.Constraint.Flip
   other-extensions: LambdaCase
                   , MultiParamTypeClasses
                   , QuasiQuotes
