@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## Unreleased
+
+* Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
+
 ## 0.3.0.2 - 2019-09-30
 
 * Update version bounds for GHC 8.8
