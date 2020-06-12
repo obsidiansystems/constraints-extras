@@ -41,9 +41,9 @@ library
 executable readme
   if !flag(build-readme)
     buildable: False
-  build-depends: base >=4.9 && <4.14
+  build-depends: base
                , aeson
-               , constraints >= 0.9 && < 0.12
+               , constraints
                , constraints-extras
   main-is: README.lhs
   ghc-options: -Wall -optL -q
