@@ -6,6 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -28,37 +29,27 @@ import Data.Constraint.Forall
 -- applied didn't quite cut it when I tried). Some symbolic type-level application could do the trick, but I didn't
 -- want to go quite that far at the time of writing.
 
-class ArgDict (c :: k -> Constraint) (f :: k -> *) where
-  type ConstraintsFor f (c :: k -> Constraint) :: Constraint
-  argDict :: ConstraintsFor f c => f a -> Dict (c a)
+class Has c f where
+  has :: forall a r. f a -> (c a => r) -> r
+  has x r | Dict <- argDict @c x = r
+  argDict :: forall a. f a -> Dict (c a)
+  argDict x = has @c x Dict
 
-type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
+type Has' (c :: k -> Constraint) f (g :: k' -> k) = Has (ComposeC c g) f
 
-argDict' :: forall f c g a. (Has' c f g) => f a -> Dict (c (g a))
-argDict' tag = case argDict tag of
-  (Dict :: Dict (ComposeC c g a)) -> Dict
-
-type ConstraintsForV (f :: (k -> k') -> *) (c :: k' -> Constraint) (g :: k) = ConstraintsFor f (FlipC (ComposeC c) g)
+argDict' :: forall c g f a. (Has' c f g) => f a -> Dict (c (g a))
+argDict' x = has @(ComposeC c g) x Dict
 
 argDictV :: forall f c g v. (HasV c f g) => f v -> Dict (c (v g))
-argDictV tag = case argDict tag of
-  (Dict :: Dict (FlipC (ComposeC c) g a)) -> Dict
+argDictV x = has @(FlipC (ComposeC c) g) x Dict
 
-{-# DEPRECATED ArgDictV "Just use 'ArgDict'" #-}
-type ArgDictV f c = ArgDict f c
-
-type Has (c :: k -> Constraint) f = (ArgDict c f, ConstraintsFor f c)
-type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict (ComposeC c g) f, ConstraintsFor' f c g)
-type HasV c f g = (ArgDict (FlipC (ComposeC c) g) f, ConstraintsForV f c g)
-
-has :: forall c f a r. (Has c f) => f a -> (c a => r) -> r
-has k r | (Dict :: Dict (c a)) <- argDict k = r
+type HasV c f g = Has (FlipC (ComposeC c) g) f
 
 has' :: forall c g f a r. (Has' c f g) => f a -> (c (g a) => r) -> r
-has' k r | (Dict :: Dict (c (g a))) <- argDict' k = r
+has' k r = has @(ComposeC c g) k r
 
 hasV :: forall c g f v r. (HasV c f g) => f v -> (c (v g) => r) -> r
-hasV k r | (Dict :: Dict (c (v g))) <- argDictV k = r
+hasV k r = has @(FlipC (ComposeC c) g) k r
 
 whichever :: forall c t a r. (ForallF c t) => (c (t a) => r) -> r
 whichever r = r \\ (instF :: ForallF c t :- c (t a))

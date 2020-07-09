@@ -12,7 +12,7 @@ Example usage:
 > {-# LANGUAGE ScopedTypeVariables #-}
 > {-# LANGUAGE TemplateHaskell #-}
 > {-# LANGUAGE TypeApplications  #-}
-> {-# LANGUAGE TypeFamilies #-}
+> {-# LANGUAGE ConstraintKinds #-}
 > {-# LANGUAGE FlexibleInstances #-}
 > {-# LANGUAGE MultiParamTypeClasses #-}
 > {-# LANGUAGE UndecidableInstances #-}

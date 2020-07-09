@@ -14,18 +14,22 @@ deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
   c <- newName "c"
   ts <- gadtIndices c n
-  let xs = flip map ts $ \case
-        Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
+  let constraints = flip map ts $ \case
+        Left t -> AppT (AppT (ConT ''Has) (VarT c)) t
         Right t -> (AppT (VarT c) t)
-      l = length xs
-      constraints = foldl AppT (TupleT l) xs
   arity <- tyConArity n
   tyVars <- replicateM (arity - 1) (newName "a")
   let n' = foldr (\v x -> AppT x (VarT v)) (ConT n) tyVars
-  [d| instance ArgDict $(varT c) $(pure n') where
-        type ConstraintsFor  $(pure n') $(varT c) = $(pure constraints)
+  ms <- matches c n 'argDict
+  return
+    [ InstanceD Nothing constraints (AppT (AppT (ConT ''Has) (VarT c)) n')
+      [ ValD (VarP 'argDict) (NormalB (LamCaseE ms)) [] ]
+    ]
+  {-
+  [d| instance $(pure constraints) => Has $(varT c) $(pure n') where
         argDict = $(LamCaseE <$> matches c n 'argDict)
     |]
+  -}
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
 deriveArgDictV = deriveArgDict
@@ -40,7 +44,7 @@ matches c n argDictName = do
       ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
         ps <- forM bts $ \case
           (_, AppT t (VarT b')) | b == b' -> do
-            hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [VarT c, t]
+            hasArgDictInstance <- not . null <$> reifyInstances ''Has [VarT c, t]
             return $ if hasArgDictInstance
               then Just x
               else Nothing
@@ -79,7 +83,7 @@ gadtIndices c n = reify n >>= \case
     GadtC _ _ (AppT _ typ) -> return [Right typ]
     ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
       (_, AppT t (VarT _)) -> do
-        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [VarT c, t]
+        hasArgDictInstance <- fmap (not . null) $ reifyInstances ''Has [VarT c, t]
         return $ if hasArgDictInstance then [Left t] else []
       _ -> return []
     ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]
