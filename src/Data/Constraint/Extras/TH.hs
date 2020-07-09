@@ -25,11 +25,6 @@ deriveArgDict n = do
     [ InstanceD Nothing constraints (AppT (AppT (ConT ''Has) (VarT c)) n')
       [ ValD (VarP 'argDict) (NormalB (LamCaseE ms)) [] ]
     ]
-  {-
-  [d| instance $(pure constraints) => Has $(varT c) $(pure n') where
-        argDict = $(LamCaseE <$> matches c n 'argDict)
-    |]
-  -}
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
 deriveArgDictV = deriveArgDict
