@@ -1,5 +1,17 @@
 # Revision history for constraints-extras
 
+## Unreleased
+
+* Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
+
+## 0.3.0.3 - 2020-06-22
+
+* Update version bounds for GHC 8.10
+
+## 0.3.0.2 - 2019-09-30
+
+* Update version bounds for GHC 8.8
+
 ## 0.3.0.1 - 2019-05-17
 
 * Drop markdown-unlit in favor of using regular "Bird"-style LHS to avoid some cross-compilation problems
