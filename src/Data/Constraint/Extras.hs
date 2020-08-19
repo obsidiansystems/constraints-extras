@@ -83,7 +83,10 @@ class Has c f where
   argDict x = has @c x Dict
   {-# MINIMAL has | argDict #-}
 
+-- | The constraint @Has' c f g@ means that given a value of type @f a@, we can satisfy the constraint @c (g a)@.
 type Has' (c :: k -> Constraint) f (g :: k' -> k) = Has (ComposeC c g) f
+
+-- | The constraint @HasV c f g@ means that given a value of type @f v@, we can satisfy the constraint @c (v g)@.
 type HasV c f g = Has (FlipC (ComposeC c) g) f
 
 -- | Get a dictionary for @c (g a)@, using a value of type @f a@.
@@ -108,6 +111,7 @@ argDictV x = has @(FlipC (ComposeC c) g) x Dict
 has' :: forall c g f a r. (Has' c f g) => f a -> (c (g a) => r) -> r
 has' k r = has @(ComposeC c g) k r
 
+-- | Similar to 'has', but given a value of type @f v@, we get a @c (v g)@ instance brought into scope instead.
 hasV :: forall c g f v r. (HasV c f g) => f v -> (c (v g) => r) -> r
 hasV k r = has @(FlipC (ComposeC c) g) k r
 
