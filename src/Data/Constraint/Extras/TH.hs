@@ -95,6 +95,7 @@ getDeclInfo n = reify n >>= \case
           [] -> error $ "getDeclInfo: Couldn't find data family instance for constructor " ++ show n
           l@(_:_:_) -> error $ "getDeclInfo: Expected one data family instance for constructor " ++ show n ++ " but found multiple: " ++ show l
           [i] -> return (typeHead, instCons i)
+      a -> error $ "getDeclInfo: Unmatched parent of data family instance: " ++ show a
   a -> error $ "getDeclInfo: Unmatched 'Info': " ++ show a
 
 gadtIndices :: [Con] -> Q [Either Type Type]
