@@ -12,8 +12,8 @@ import Language.Haskell.TH
 
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
+  (typeHead, constrs) <- getDeclInfo n
   c <- newName "c"
-  (typeHead, constrs) <- getDeclInfo c n
   ts <- gadtIndices c constrs
   let xs = flip map ts $ \case
         Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
@@ -65,8 +65,8 @@ kindArity = \case
   ParensT t -> kindArity t
   _ -> 0
 
-getDeclInfo :: Name -> Name -> Q (Type, [Con])
-getDeclInfo c n = reify n >>= \case
+getDeclInfo :: Name -> Q (Type, [Con])
+getDeclInfo n = reify n >>= \case
   TyConI (DataD _ _ ts mk constrs _) -> do
     let arity = fromMaybe 0 (fmap kindArity mk) + length ts
     tyVars <- replicateM (arity - 1) (newName "a")
@@ -93,6 +93,7 @@ getDeclInfo c n = reify n >>= \case
           [] -> error $ "getDeclInfo: Couldn't find data family instance for constructor " ++ show n
           l@(_:_:_) -> error $ "getDeclInfo: Expected one data family instance for constructor " ++ show n ++ " but found multiple: " ++ show l
           [i] -> return (typeHead, instCons i)
+      a -> error $ "getDeclInfo: Unmatched parent of data family instance: " ++ show a
   a -> error $ "getDeclInfo: Unmatched 'Info': " ++ show a
 
 gadtIndices :: Name -> [Con] -> Q [Either Type Type]
