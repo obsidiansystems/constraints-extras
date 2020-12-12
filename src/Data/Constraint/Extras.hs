@@ -66,11 +66,17 @@ import Data.Kind
 -- Use 'Data.Constraint.Extras.TH.deriveArgDict' to derive instances
 -- of this class.
 --
--- The class constraint is there to enforce the law that '@ConstraintsFor@ X'
--- *only* enumerates the indices of '@X@'. In the most general case, all types
--- are possible GADT indices, so we should always be able to '@ConstraintsFor@
--- X' from 'forall a. c a'.
-class (forall c. (forall a. c a) => ConstraintsFor f c) => ArgDict (f :: k -> Type) where
+-- One law on this class is:
+--
+-- > (forall c. (forall a. c a) => ConstraintsFor f c)
+--
+-- This provides and upper bound for what '@ConstraintsFor@ f c' requires. in
+-- the most general case, all types are possible GADT indices, so we should
+-- always be able to '@ConstraintsFor@ f c' from 'forall a. c a'. This law
+-- could actually be a superclass, if it weren't for the restriction on from
+-- GHC 8.8 onward (at the time of writing this) that type families cannot be at
+-- the heads of quantified constraints.
+class ArgDict (f :: k -> Type) where
   -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
   --
   -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
