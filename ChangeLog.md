@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
+* Provide `ArgDict` instances for sums of functors.
 
 ## 0.3.0.3 - 2020-06-22
 
