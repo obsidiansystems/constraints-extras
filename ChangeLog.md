@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
+* Support GHC 9.0.1
 
 ## 0.3.0.3 - 2020-06-22
 
