@@ -77,14 +77,14 @@ class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
   -- > argDict I :: Dict (Show Int)
   argDict :: ConstraintsFor f c => f a -> Dict (c a)
 
--- | @since 0.3.1
+-- | @since 0.3.2.0
 instance (ArgDict c f, ArgDict c g) => ArgDict c (f :+: g) where
   type ConstraintsFor (f :+: g) c = (ConstraintsFor f c, ConstraintsFor g c)
   argDict = \case
     L1 f -> argDict f
     R1 g -> argDict g
 
--- | @since 0.3.1
+-- | @since 0.3.2.0
 instance (ArgDict c f, ArgDict c g) => ArgDict c (Sum f g) where
   type ConstraintsFor (Sum f g) c = (ConstraintsFor f c, ConstraintsFor g c)
   argDict = \case
