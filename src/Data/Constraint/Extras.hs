@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -51,7 +52,9 @@ import Data.Constraint
 import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
+import Data.Functor.Sum (Sum(..))
 import Data.Kind
+import GHC.Generics ((:+:)(..))
 
 -- | Morally, this class is for GADTs whose indices can be finitely
 -- enumerated. An @'ArgDict' c f@ instance allows us to do two things:
@@ -73,6 +76,20 @@ class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
   --
   -- > argDict I :: Dict (Show Int)
   argDict :: ConstraintsFor f c => f a -> Dict (c a)
+
+-- | @since 0.3.2.0
+instance (ArgDict c f, ArgDict c g) => ArgDict c (f :+: g) where
+  type ConstraintsFor (f :+: g) c = (ConstraintsFor f c, ConstraintsFor g c)
+  argDict = \case
+    L1 f -> argDict f
+    R1 g -> argDict g
+
+-- | @since 0.3.2.0
+instance (ArgDict c f, ArgDict c g) => ArgDict c (Sum f g) where
+  type ConstraintsFor (Sum f g) c = (ConstraintsFor f c, ConstraintsFor g c)
+  argDict = \case
+    InL f -> argDict f
+    InR g -> argDict g
 
 -- | \"Primed\" variants (@ConstraintsFor'@, 'argDict'', 'Has'',
 -- 'has'', &c.) use the 'ArgDict' instance on @f@ to apply constraints
