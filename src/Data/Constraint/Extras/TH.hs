@@ -14,24 +14,24 @@ import Language.Haskell.TH
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
   (typeHead, constrs) <- getDeclInfo n
+  ts <- gadtIndices constrs
   c <- newName "c"
-  ts <- gadtIndices c constrs
   let xs = flip map ts $ \case
         Left t -> AppT (AppT (ConT ''ConstraintsFor) t) (VarT c)
         Right t -> (AppT (VarT c) t)
       l = length xs
       constraints = foldl AppT (TupleT l) xs
-  [d| instance ArgDict $(varT c) $(pure typeHead) where
+  [d| instance ArgDict $(pure typeHead) where
         type ConstraintsFor  $(pure typeHead) $(varT c) = $(pure constraints)
-        argDict = $(LamCaseE <$> matches c constrs 'argDict)
+        argDictAll = $(LamCaseE <$> matches constrs 'argDictAll)
     |]
 
 {-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
 deriveArgDictV :: Name -> Q [Dec]
 deriveArgDictV = deriveArgDict
 
-matches :: Name -> [Con] -> Name -> Q [Match]
-matches c constrs argDictName = do
+matches :: [Con] -> Name -> Q [Match]
+matches constrs argDictName = do
   x <- newName "x"
   fmap concat $ forM constrs $ \case
     GadtC [name] _ _ -> return $
@@ -39,7 +39,7 @@ matches c constrs argDictName = do
     ForallC _ _ (GadtC [name] bts (AppT _ (VarT b))) -> do
       ps <- forM bts $ \case
         (_, AppT t (VarT b')) | b == b' -> do
-          hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [VarT c, t]
+          hasArgDictInstance <- not . null <$> reifyInstances ''ArgDict [t]
           return $ if hasArgDictInstance
             then Just x
             else Nothing
@@ -53,7 +53,9 @@ matches c constrs argDictName = do
                   Nothing -> WildP : rest done
                   Just _ -> VarP v : rest True
               pat = foldr patf (const []) ps False
-          in [Match (conPCompat name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
+              eta = CaseE (AppE (VarE argDictName) (VarE v))
+                [Match (RecP 'Dict []) (NormalB $ ConE 'Dict) []]
+          in [Match (conPCompat name pat) (NormalB eta) []]
     ForallC _ _ (GadtC [name] _ _) -> return $
       [Match (RecP name []) (NormalB $ ConE 'Dict) []]
     a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
@@ -105,12 +107,12 @@ getDeclInfo n = reify n >>= \case
       a -> error $ "getDeclInfo: Unmatched parent of data family instance: " ++ show a
   a -> error $ "getDeclInfo: Unmatched 'Info': " ++ show a
 
-gadtIndices :: Name -> [Con] -> Q [Either Type Type]
-gadtIndices c constrs = fmap concat $ forM constrs $ \case
+gadtIndices :: [Con] -> Q [Either Type Type]
+gadtIndices constrs = fmap concat $ forM constrs $ \case
   GadtC _ _ (AppT _ typ) -> return [Right typ]
   ForallC _ _ (GadtC _ bts (AppT _ (VarT _))) -> fmap concat $ forM bts $ \case
     (_, AppT t (VarT _)) -> do
-      hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [VarT c, t]
+      hasArgDictInstance <- fmap (not . null) $ reifyInstances ''ArgDict [t]
       return $ if hasArgDictInstance then [Left t] else []
     _ -> return []
   ForallC _ _ (GadtC _ _ (AppT _ typ)) -> return [Right typ]

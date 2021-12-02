@@ -1,12 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -37,6 +39,7 @@ module Data.Constraint.Extras
     -- * Bringing instances into scope
   , Has
   , has
+  , hasAll
   , Has'
   , has'
   , HasV
@@ -56,7 +59,7 @@ import Data.Functor.Sum (Sum(..))
 import Data.Kind
 import GHC.Generics ((:+:)(..))
 
--- | Morally, this class is for GADTs whose indices can be finitely
+-- | Morally, this class is for GADTs whose indices can be recursively
 -- enumerated. An @'ArgDict' c f@ instance allows us to do two things:
 --
 -- 1. 'ConstraintsFor' requests the set of constraints @c a@ for all
@@ -66,30 +69,44 @@ import GHC.Generics ((:+:)(..))
 --
 -- Use 'Data.Constraint.Extras.TH.deriveArgDict' to derive instances
 -- of this class.
-class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
+--
+-- One law on this class is:
+--
+-- > (forall c. (forall a. c a) => ConstraintsForC f c)
+--
+-- This provides and upper bound for what '@ConstraintsFor@ f c' requires. in
+-- the most general case, all types are possible GADT indices, so we should
+-- always be able to '@ConstraintsFor@ f c' from 'forall a. c a'. This law
+-- is implemented as a super class.
+class
+  (forall c. (forall a. c a) => ConstraintsForC f c)
+  => ArgDict (f :: k -> Type) where
   -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
   --
   -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
-  type ConstraintsFor f c :: Constraint
+  type ConstraintsFor f (c :: k -> Constraint) :: Constraint
 
-  -- | Use an @f a@ to select a specific dictionary from @ConstraintsFor f c@.
+  -- | Use an @f a@ to select a "function dictionary" demonstrating
+  -- @ConstraintsFor f c@ contains @c a@.
   --
-  -- > argDict I :: Dict (Show Int)
-  argDict :: ConstraintsFor f c => f a -> Dict (c a)
+  -- @argDict@ is sufficient for most tasks, but this is slightly more powerful
+  -- in that this discharges the quantified constraints which are useful when
+  -- the GADT indices are not finite.
+  argDictAll :: f a -> Dict (Extract f a)
 
 -- | @since 0.3.2.0
-instance (ArgDict c f, ArgDict c g) => ArgDict c (f :+: g) where
+instance (ArgDict f, ArgDict g) => ArgDict (f :+: g) where
   type ConstraintsFor (f :+: g) c = (ConstraintsFor f c, ConstraintsFor g c)
-  argDict = \case
-    L1 f -> argDict f
-    R1 g -> argDict g
+  argDictAll = \case
+    L1 f -> weakenContra (argDictAll f)
+    R1 g -> weakenContra (argDictAll g)
 
 -- | @since 0.3.2.0
-instance (ArgDict c f, ArgDict c g) => ArgDict c (Sum f g) where
+instance (ArgDict f, ArgDict g) => ArgDict (Sum f g) where
   type ConstraintsFor (Sum f g) c = (ConstraintsFor f c, ConstraintsFor g c)
-  argDict = \case
-    InL f -> argDict f
-    InR g -> argDict g
+  argDictAll = \case
+    InL f -> weakenContra (argDictAll f)
+    InR g -> weakenContra (argDictAll g)
 
 -- | \"Primed\" variants (@ConstraintsFor'@, 'argDict'', 'Has'',
 -- 'has'', &c.) use the 'ArgDict' instance on @f@ to apply constraints
@@ -100,34 +117,62 @@ instance (ArgDict c f, ArgDict c g) => ArgDict c (Sum f g) where
 -- > ConstraintsFor' Tag Show Identity = (Show (Identity Int), Show (Identity Bool))
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
 
+-- | Helper class to avoid restrictions on type families
+class ConstraintsFor f c => ConstraintsForC f c
+instance ConstraintsFor f c => ConstraintsForC f c
+
+-- | Helper class to avoid impredicative type
+class (forall c. ConstraintsForC f c => c a) => Extract f a
+instance (forall c. ConstraintsForC f c => c a) => Extract f a
+
+weakenContra
+  :: forall f g a
+  .  (forall c. ConstraintsForC g c => ConstraintsForC f c)
+  => Dict (Extract f a) -> Dict (Extract g a)
+weakenContra Dict = Dict
+
+-- | Use an @f a@ to select a specific dictionary from @ConstraintsFor f c@.
+--
+-- > argDict I :: Dict (Show Int)
+argDict :: forall f c a. Has c f => f a -> Dict (c a)
+argDict tag = case argDictAll tag of
+  (Dict :: Dict (Extract f a)) -> Dict
+
 -- | Get a dictionary for a specific @g a@, using a value of type @f a@.
 --
 -- > argDict' B :: Dict (Show (Identity Bool))
-argDict' :: forall f c g a. (Has' c f g) => f a -> Dict (c (g a))
+argDict' :: forall f c g a. Has' c f g => f a -> Dict (c (g a))
 argDict' tag = case argDict tag of
   (Dict :: Dict (ComposeC c g a)) -> Dict
 
 type ConstraintsForV (f :: (k -> k') -> Type) (c :: k' -> Constraint) (g :: k) = ConstraintsFor f (FlipC (ComposeC c) g)
 
-argDictV :: forall f c g v. (HasV c f g) => f v -> Dict (c (v g))
+argDictV :: forall f c g v. (ArgDict f, ConstraintsForV f c g) => f v -> Dict (c (v g))
 argDictV tag = case argDict tag of
   (Dict :: Dict (FlipC (ComposeC c) g a)) -> Dict
 
 {-# DEPRECATED ArgDictV "Just use 'ArgDict'" #-}
-type ArgDictV f c = ArgDict f c
+type ArgDictV f = ArgDict f
 
 -- | @Has c f@ is a constraint which means that for every type @a@
 -- that could be applied to @f@, we have @c a@.
 --
 -- > Has Show Tag = (ArgDict Show Tag, Show Int, Show Bool)
-type Has (c :: k -> Constraint) f = (ArgDict c f, ConstraintsFor f c)
+type Has (c :: k -> Constraint) f = (ArgDict f, ConstraintsFor f c)
 
 -- | @Has' c f g@ is a constraint which means that for every type @a@
 -- that could be applied to @f@, we have @c (g a)@.
 --
 -- > Has' Show Tag Identity = (ArgDict (Show . Identity) Tag, Show (Identity Int), Show (Identity Bool))
-type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict (ComposeC c g) f, ConstraintsFor' f c g)
-type HasV c f g = (ArgDict (FlipC (ComposeC c) g) f, ConstraintsForV f c g)
+type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict f, ConstraintsFor' f c g)
+type HasV c f g = (ArgDict f, ConstraintsForV f c g)
+
+-- | More powerful version of @has@.
+--
+-- As @has@ is to @argDict@, so @hasAll@ is to @argDictAll@. See the
+-- documentation for @argDictAll@ for why one might need this.
+hasAll :: forall f a r. ArgDict f => f a -> ((forall c. Has c f => c a) => r) -> r
+hasAll k r | (Dict :: Dict (Extract f a)) <- argDictAll k = r
 
 -- | Use the @a@ from @f a@ to select a specific @c a@ constraint, and
 -- bring it into scope. The order of type variables is chosen to work
