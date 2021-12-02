@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -54,10 +55,18 @@ matches constrs argDictName = do
               pat = foldr patf (const []) ps False
               eta = CaseE (AppE (VarE argDictName) (VarE v))
                 [Match (RecP 'Dict []) (NormalB $ ConE 'Dict) []]
-          in [Match (ConP name pat) (NormalB eta) []]
+          in [Match (conPCompat name pat) (NormalB eta) []]
     ForallC _ _ (GadtC [name] _ _) -> return $
       [Match (RecP name []) (NormalB $ ConE 'Dict) []]
     a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
+
+conPCompat :: Name -> [Pat] -> Pat
+conPCompat name =
+  ConP
+    name
+#if MIN_VERSION_template_haskell(2, 18, 0)
+    []
+#endif
 
 kindArity :: Kind -> Int
 kindArity = \case

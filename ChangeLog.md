@@ -2,7 +2,16 @@
 
 ## Unreleased
 
+* Support GHC 9.2
+
+## 0.3.2.0
+
+* Provide `ArgDict` instances for sums of functors.
+
+## 0.3.1.0
+
 * Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
+* Support GHC 9.0.1
 
 * Overhaul to allow working with recursive GADTs.
 

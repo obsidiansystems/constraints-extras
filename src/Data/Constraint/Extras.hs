@@ -1,12 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -53,7 +55,9 @@ import Data.Constraint
 import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
+import Data.Functor.Sum (Sum(..))
 import Data.Kind
+import GHC.Generics ((:+:)(..))
 
 -- | Morally, this class is for GADTs whose indices can be recursively
 -- enumerated. An @'ArgDict' c f@ instance allows us to do two things:
@@ -68,15 +72,15 @@ import Data.Kind
 --
 -- One law on this class is:
 --
--- > (forall c. (forall a. c a) => ConstraintsFor f c)
+-- > (forall c. (forall a. c a) => ConstraintsForC f c)
 --
 -- This provides and upper bound for what '@ConstraintsFor@ f c' requires. in
 -- the most general case, all types are possible GADT indices, so we should
 -- always be able to '@ConstraintsFor@ f c' from 'forall a. c a'. This law
--- could actually be a superclass, if it weren't for the restriction on from
--- GHC 8.8 onward (at the time of writing this) that type families cannot be at
--- the heads of quantified constraints.
-class ArgDict (f :: k -> Type) where
+-- is implemented as a super class.
+class
+  (forall c. (forall a. c a) => ConstraintsForC f c)
+  => ArgDict (f :: k -> Type) where
   -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
   --
   -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
@@ -90,6 +94,20 @@ class ArgDict (f :: k -> Type) where
   -- the GADT indices are not finite.
   argDictAll :: f a -> Dict (Extract f a)
 
+-- | @since 0.3.2.0
+instance (ArgDict f, ArgDict g) => ArgDict (f :+: g) where
+  type ConstraintsFor (f :+: g) c = (ConstraintsFor f c, ConstraintsFor g c)
+  argDictAll = \case
+    L1 f -> weakenContra (argDictAll f)
+    R1 g -> weakenContra (argDictAll g)
+
+-- | @since 0.3.2.0
+instance (ArgDict f, ArgDict g) => ArgDict (Sum f g) where
+  type ConstraintsFor (Sum f g) c = (ConstraintsFor f c, ConstraintsFor g c)
+  argDictAll = \case
+    InL f -> weakenContra (argDictAll f)
+    InR g -> weakenContra (argDictAll g)
+
 -- | \"Primed\" variants (@ConstraintsFor'@, 'argDict'', 'Has'',
 -- 'has'', &c.) use the 'ArgDict' instance on @f@ to apply constraints
 -- on @g a@ instead of just @a@. This is often useful when you have
@@ -99,9 +117,19 @@ class ArgDict (f :: k -> Type) where
 -- > ConstraintsFor' Tag Show Identity = (Show (Identity Int), Show (Identity Bool))
 type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
 
+-- | Helper class to avoid restrictions on type families
+class ConstraintsFor f c => ConstraintsForC f c
+instance ConstraintsFor f c => ConstraintsForC f c
+
 -- | Helper class to avoid impredicative type
-class (forall c. ConstraintsFor f c => c a) => Extract f a
-instance (forall c. ConstraintsFor f c => c a) => Extract f a
+class (forall c. ConstraintsForC f c => c a) => Extract f a
+instance (forall c. ConstraintsForC f c => c a) => Extract f a
+
+weakenContra
+  :: forall f g a
+  .  (forall c. ConstraintsForC g c => ConstraintsForC f c)
+  => Dict (Extract f a) -> Dict (Extract g a)
+weakenContra Dict = Dict
 
 -- | Use an @f a@ to select a specific dictionary from @ConstraintsFor f c@.
 --
