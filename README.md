@@ -13,6 +13,7 @@ Example usage:
 > {-# LANGUAGE TemplateHaskell #-}
 > {-# LANGUAGE TypeApplications  #-}
 > {-# LANGUAGE TypeFamilies #-}
+> {-# LANGUAGE FlexibleContexts #-}
 > {-# LANGUAGE FlexibleInstances #-}
 > {-# LANGUAGE MultiParamTypeClasses #-}
 > {-# LANGUAGE UndecidableInstances #-}
