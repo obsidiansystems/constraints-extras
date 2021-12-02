@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## Unreleased
+
+* Support GHC 9.2
+
 ## 0.3.2.0
 
 * Provide `ArgDict` instances for sums of functors.
