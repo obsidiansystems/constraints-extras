@@ -1,6 +1,6 @@
 # Revision history for constraints-extras
 
-## Unreleased
+## 0.3.2.1
 
 * Support GHC 9.2
 
