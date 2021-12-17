@@ -1,14 +1,14 @@
 # Revision history for constraints-extras
 
-## 0.3.2.1
+## 0.3.2.1 - 2021-12-17
 
 * Support GHC 9.2
 
-## 0.3.2.0
+## 0.3.2.0 - 2021-10-28
 
 * Provide `ArgDict` instances for sums of functors.
 
-## 0.3.1.0
+## 0.3.1.0 - 2021-03-24
 
 * Allow deriving instances with `deriveArgDict` for data and newtype family instances by supplying the name of one of its constructors
 * Support GHC 9.0.1
