@@ -49,6 +49,16 @@ executable readme
   ghc-options: -Wall -optL -q
   default-language: Haskell2010
 
+test-suite constraints-extras-th
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test/th
+  main-is:            Main.hs
+  other-modules:      Large
+
+  build-depends: base
+               , constraints
+               , constraints-extras
+
 source-repository head
   type:     git
   location: git://github.com/obsidiansystems/constraints-extras.git
