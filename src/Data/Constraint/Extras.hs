@@ -7,6 +7,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -28,15 +29,11 @@
 -- must come from the set { @Int@, @Bool@ }. We call this the "set of
 -- types @a@ that could be applied to @Tag@".
 module Data.Constraint.Extras
-  ( -- * The ArgDict typeclass
-    ArgDict(..)
-  , ConstraintsFor'
+  ( -- * The Has typeclass
+    Has(..)
   , argDict'
-  , ConstraintsForV
   , argDictV
     -- * Bringing instances into scope
-  , Has
-  , has
   , Has'
   , has'
   , HasV
@@ -44,8 +41,6 @@ module Data.Constraint.Extras
   , whichever
     -- * Misc
   , Implies1(..)
-    -- * Deprecated
-  , ArgDictV
   ) where
 
 import Data.Constraint
@@ -56,93 +51,69 @@ import Data.Functor.Sum (Sum(..))
 import Data.Kind
 import GHC.Generics ((:+:)(..))
 
--- | Morally, this class is for GADTs whose indices can be finitely
--- enumerated. An @'ArgDict' c f@ instance allows us to do two things:
---
--- 1. 'ConstraintsFor' requests the set of constraints @c a@ for all
---    possible types @a@ that could be applied to @f@.
---
--- 2. 'argDict' selects a specific @c a@ given a value of type @f a@.
---
--- Use 'Data.Constraint.Extras.TH.deriveArgDict' to derive instances
--- of this class.
-class ArgDict (c :: k -> Constraint) (f :: k -> Type) where
-  -- | Apply @c@ to each possible type @a@ that could appear in a @f a@.
-  --
-  -- > ConstraintsFor Show Tag = (Show Int, Show Bool)
-  type ConstraintsFor f c :: Constraint
+-- | The constraint @Has c f@ means that given any value of type @f a@, we can determine
+-- that there is an instance of @c a@. For example, @Has Show Tag@ means that given any
+-- @x :: Tag a@, we can conclude @Show a@. Most commonly, the type @f@ will be a GADT,
+-- where we can enumerate all the possible index types through pattern matching, and
+-- discover that there is an appropriate instance in each case. In this sort of
+-- situation, the @c@ can be left entirely polymorphic in the instance for @Has@, and
+-- this is the sort of instance that the provided Template Haskell code writes.
 
-  -- | Use an @f a@ to select a specific dictionary from @ConstraintsFor f c@.
+-- It is also sometimes possible to hand-write instances of @Has c f@ for specific
+-- classes @c@ in cases where @f@ is a data type that packs an appropriate dictionary
+-- into its constructors.
+class Has c f where
+  -- | Use the @f a@ to show that there is an instance of @c a@, and
+  -- bring it into scope.
   --
-  -- > argDict I :: Dict (Show Int)
-  argDict :: ConstraintsFor f c => f a -> Dict (c a)
+  -- The order of type variables is chosen to work
+  -- with @-XTypeApplications@.
+  --
+  -- > -- Hold a value of type a, along with a tag identifying the a.
+  -- > data SomeTagged tag where
+  -- >   SomeTagged :: a -> tag a -> SomeTagged tag
+  -- >
+  -- > -- Use the stored tag to identify the thing we have, allowing us to call 'show'. Note that we
+  -- > -- have no knowledge of the tag type.
+  -- > showSomeTagged :: Has Show tag => SomeTagged tag -> String
+  -- > showSomeTagged (SomeTagged a tag) = has @Show tag $ show a
+  has :: forall a r. f a -> (c a => r) -> r
+  has x r | Dict <- argDict @c x = r
+
+  -- | Use an @f a@ to obtain a dictionary for @c a@
+  --
+  -- > argDict @Show I :: Dict (Show Int)
+  argDict :: forall a. f a -> Dict (c a)
+  argDict x = has @c x Dict
+  {-# MINIMAL has | argDict #-}
 
 -- | @since 0.3.2.0
-instance (ArgDict c f, ArgDict c g) => ArgDict c (f :+: g) where
-  type ConstraintsFor (f :+: g) c = (ConstraintsFor f c, ConstraintsFor g c)
+instance (Has c f, Has c g) => Has c (f :+: g) where
   argDict = \case
     L1 f -> argDict f
     R1 g -> argDict g
 
 -- | @since 0.3.2.0
-instance (ArgDict c f, ArgDict c g) => ArgDict c (Sum f g) where
-  type ConstraintsFor (Sum f g) c = (ConstraintsFor f c, ConstraintsFor g c)
+instance (Has c f, Has c g) => Has c (Sum f g) where
   argDict = \case
     InL f -> argDict f
     InR g -> argDict g
 
--- | \"Primed\" variants (@ConstraintsFor'@, 'argDict'', 'Has'',
--- 'has'', &c.) use the 'ArgDict' instance on @f@ to apply constraints
--- on @g a@ instead of just @a@. This is often useful when you have
--- data structures parameterised by something of kind @(x -> Type) ->
--- Type@, like in the @dependent-sum@ and @dependent-map@ libraries.
+-- | The constraint @Has' c f g@ means that given a value of type @f a@, we can satisfy the constraint @c (g a)@.
+type Has' (c :: k -> Constraint) f (g :: k' -> k) = Has (ComposeC c g) f
+
+-- | The constraint @HasV c f g@ means that given a value of type @f v@, we can satisfy the constraint @c (v g)@.
+type HasV c f g = Has (FlipC (ComposeC c) g) f
+
+-- | Get a dictionary for @c (g a)@, using a value of type @f a@.
 --
--- > ConstraintsFor' Tag Show Identity = (Show (Identity Int), Show (Identity Bool))
-type ConstraintsFor' f (c :: k -> Constraint) (g :: k' -> k) = ConstraintsFor f (ComposeC c g)
+-- > argDict' @Show @Identity B :: Dict (Show (Identity Bool))
+argDict' :: forall c g f a. (Has' c f g) => f a -> Dict (c (g a))
+argDict' x = has @(ComposeC c g) x Dict
 
--- | Get a dictionary for a specific @g a@, using a value of type @f a@.
---
--- > argDict' B :: Dict (Show (Identity Bool))
-argDict' :: forall f c g a. (Has' c f g) => f a -> Dict (c (g a))
-argDict' tag = case argDict tag of
-  (Dict :: Dict (ComposeC c g a)) -> Dict
-
-type ConstraintsForV (f :: (k -> k') -> Type) (c :: k' -> Constraint) (g :: k) = ConstraintsFor f (FlipC (ComposeC c) g)
-
+-- | Get a dictionary for @c (v g)@, using a value of type @f v@.
 argDictV :: forall f c g v. (HasV c f g) => f v -> Dict (c (v g))
-argDictV tag = case argDict tag of
-  (Dict :: Dict (FlipC (ComposeC c) g a)) -> Dict
-
-{-# DEPRECATED ArgDictV "Just use 'ArgDict'" #-}
-type ArgDictV f c = ArgDict f c
-
--- | @Has c f@ is a constraint which means that for every type @a@
--- that could be applied to @f@, we have @c a@.
---
--- > Has Show Tag = (ArgDict Show Tag, Show Int, Show Bool)
-type Has (c :: k -> Constraint) f = (ArgDict c f, ConstraintsFor f c)
-
--- | @Has' c f g@ is a constraint which means that for every type @a@
--- that could be applied to @f@, we have @c (g a)@.
---
--- > Has' Show Tag Identity = (ArgDict (Show . Identity) Tag, Show (Identity Int), Show (Identity Bool))
-type Has' (c :: k -> Constraint) f (g :: k' -> k) = (ArgDict (ComposeC c g) f, ConstraintsFor' f c g)
-type HasV c f g = (ArgDict (FlipC (ComposeC c) g) f, ConstraintsForV f c g)
-
--- | Use the @a@ from @f a@ to select a specific @c a@ constraint, and
--- bring it into scope. The order of type variables is chosen to work
--- with @-XTypeApplications@.
---
--- > -- Hold an a, along with a tag identifying the a.
--- > data SomeTagged tag where
--- >   SomeTagged :: a -> tag a -> SomeTagged tag
--- >
--- > -- Use the stored tag to identify the thing we have, allowing us to call 'show'. Note that we
--- > -- have no knowledge of the tag type.
--- > showSomeTagged :: Has Show tag => SomeTagged tag -> String
--- > showSomeTagged (SomeTagged a tag) = has @Show tag $ show a
-has :: forall c f a r. Has c f => f a -> (c a => r) -> r
-has k r | (Dict :: Dict (c a)) <- argDict k = r
+argDictV x = has @(FlipC (ComposeC c) g) x Dict
 
 -- | Like 'has', but we get a @c (g a)@ instance brought into scope
 -- instead. Use @-XTypeApplications@ to specify @c@ and @g@.
@@ -153,11 +124,12 @@ has k r | (Dict :: Dict (c a)) <- argDict k = r
 -- > -- Show the value from a dependent sum. (We'll need 'whichever', discussed later, to show the key.)
 -- > showDSumVal :: forall tag f . Has' Show tag f => DSum tag f -> String
 -- > showDSumVal (tag :=> fa) = has' @Show @f tag $ show fa
-has' :: forall c g f a r. Has' c f g => f a -> (c (g a) => r) -> r
-has' k r | (Dict :: Dict (c (g a))) <- argDict' k = r
+has' :: forall c g f a r. (Has' c f g) => f a -> (c (g a) => r) -> r
+has' k r = has @(ComposeC c g) k r
 
-hasV :: forall c g f v r. HasV c f g => f v -> (c (v g) => r) -> r
-hasV k r | (Dict :: Dict (c (v g))) <- argDictV k = r
+-- | Similar to 'has', but given a value of type @f v@, we get a @c (v g)@ instance brought into scope instead.
+hasV :: forall c g f v r. (HasV c f g) => f v -> (c (v g) => r) -> r
+hasV k r = has @(FlipC (ComposeC c) g) k r
 
 -- | Given "forall a. @c (t a)@" (the @ForallF c t@ constraint), select a
 -- specific @a@, and bring @c (t a)@ into scope. Use @-XTypeApplications@ to

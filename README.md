@@ -14,10 +14,12 @@ Example usage:
 > {-# LANGUAGE TypeApplications  #-}
 > {-# LANGUAGE TypeFamilies #-}
 > {-# LANGUAGE FlexibleContexts #-}
+> {-# LANGUAGE ConstraintKinds #-}
 > {-# LANGUAGE FlexibleInstances #-}
 > {-# LANGUAGE MultiParamTypeClasses #-}
 > {-# LANGUAGE UndecidableInstances #-}
 > {-# LANGUAGE ExistentialQuantification #-}
+> {-# LANGUAGE TypeFamilies #-}
 >
 > import Data.Aeson
 > import Data.Constraint.Forall
@@ -40,6 +42,14 @@ Example usage:
 >   V_a :: A Int -> V A
 >
 > deriveArgDict ''V
+>
+> data family Fam a :: * -> *
+> data instance Fam () :: * -> * where
+>   FI :: Fam () Int
+>   FB :: Fam () Bool
+>
+> deriveArgDict 'FI
+> -- this derives an instance Has c (Fam ()) by looking up the associated data instance.
 >
 > data DSum k f = forall a. DSum (k a) (f a)
 >
@@ -65,4 +75,5 @@ Example usage:
 >
 > main :: IO ()
 > main = return ()
+
 ```

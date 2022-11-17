@@ -1,5 +1,5 @@
 name: constraints-extras
-version: 0.3.2.1
+version: 0.4.0.0
 synopsis: Utility package for constraints
 description: Convenience functions and TH for working with constraints. See <https://github.com/obsidiansystems/constraints-extras/blob/develop/README.md README.md> for example usage.
 category: Constraints
