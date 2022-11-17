@@ -1,5 +1,11 @@
 # Revision history for constraints-extras
 
+## 0.4.0.0 - 2022-11-18
+
+* Make `Has` from a type synonym into the class upon which everything else is based. Instances may define either `has` or `argDict` which are now both methods of `Has`. This should hopefully improve the readability of type errors involving the library a fair bit, as everything wanted to use `Has`, but it was defined in terms of the less commonly appearing `ArgDict` and `ConstraintsFor`.
+* The `ConstraintsFor` type family has been removed as it is now unnecessary, as instances of `Has` can simply be constrained directly. This has the added benefit of allowing `QuantifiedConstraints` in those instance heads that formerly would not have been allowed as part of the result of a type family.
+* The `ArgDict` class has also been removed, as it was also basically never used on its own.
+
 ## 0.3.2.1 - 2021-12-17
 
 * Support GHC 9.2
