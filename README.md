@@ -12,6 +12,8 @@ Example usage:
 > {-# LANGUAGE ScopedTypeVariables #-}
 > {-# LANGUAGE TemplateHaskell #-}
 > {-# LANGUAGE TypeApplications  #-}
+> {-# LANGUAGE TypeFamilies #-}
+> {-# LANGUAGE FlexibleContexts #-}
 > {-# LANGUAGE ConstraintKinds #-}
 > {-# LANGUAGE FlexibleInstances #-}
 > {-# LANGUAGE MultiParamTypeClasses #-}

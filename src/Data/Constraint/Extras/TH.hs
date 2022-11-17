@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,8 +13,8 @@ import Language.Haskell.TH
 
 deriveArgDict :: Name -> Q [Dec]
 deriveArgDict n = do
+  (typeHead, constrs) <- getDeclInfo n
   c <- newName "c"
-  (typeHead, constrs) <- getDeclInfo c n
   ts <- gadtIndices c constrs
   let constraints = flip map ts $ \case
         Left t -> AppT (AppT (ConT ''Has) (VarT c)) t
@@ -51,10 +52,18 @@ matches c constrs argDictName = do
                   Nothing -> WildP : rest done
                   Just _ -> VarP v : rest True
               pat = foldr patf (const []) ps False
-          in [Match (ConP name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
+          in [Match (conPCompat name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
     ForallC _ _ (GadtC [name] _ _) -> return $
       [Match (RecP name []) (NormalB $ ConE 'Dict) []]
     a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
+
+conPCompat :: Name -> [Pat] -> Pat
+conPCompat name =
+  ConP
+    name
+#if MIN_VERSION_template_haskell(2, 18, 0)
+    []
+#endif
 
 kindArity :: Kind -> Int
 kindArity = \case
@@ -64,8 +73,8 @@ kindArity = \case
   ParensT t -> kindArity t
   _ -> 0
 
-getDeclInfo :: Name -> Name -> Q (Type, [Con])
-getDeclInfo c n = reify n >>= \case
+getDeclInfo :: Name -> Q (Type, [Con])
+getDeclInfo n = reify n >>= \case
   TyConI (DataD _ _ ts mk constrs _) -> do
     let arity = fromMaybe 0 (fmap kindArity mk) + length ts
     tyVars <- replicateM (arity - 1) (newName "a")
@@ -95,7 +104,7 @@ getDeclInfo c n = reify n >>= \case
           [] -> error $ "getDeclInfo: Couldn't find data family instance for constructor " ++ show n
           l@(_:_:_) -> error $ "getDeclInfo: Expected one data family instance for constructor " ++ show n ++ " but found multiple: " ++ show l
           [i] -> return (typeHead, instCons i)
-
+      a -> error $ "getDeclInfo: Unmatched parent of data family instance: " ++ show a
 
 gadtIndices :: Name -> [Con] -> Q [Either Type Type]
 gadtIndices c constrs = fmap concat $ forM constrs $ \case

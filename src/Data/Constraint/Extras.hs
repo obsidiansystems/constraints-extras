@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -46,6 +47,9 @@ import Data.Constraint
 import Data.Constraint.Compose
 import Data.Constraint.Flip
 import Data.Constraint.Forall
+import Data.Functor.Sum (Sum(..))
+import Data.Kind
+import GHC.Generics ((:+:)(..))
 
 -- | The constraint @Has c f@ means that given any value of type @f a@, we can determine
 -- that there is an instance of @c a@. For example, @Has Show Tag@ means that given any
@@ -82,6 +86,18 @@ class Has c f where
   argDict :: forall a. f a -> Dict (c a)
   argDict x = has @c x Dict
   {-# MINIMAL has | argDict #-}
+
+-- | @since 0.3.2.0
+instance (Has c f, Has c g) => Has c (f :+: g) where
+  argDict = \case
+    L1 f -> argDict f
+    R1 g -> argDict g
+
+-- | @since 0.3.2.0
+instance (Has c f, Has c g) => Has c (Sum f g) where
+  argDict = \case
+    InL f -> argDict f
+    InR g -> argDict g
 
 -- | The constraint @Has' c f g@ means that given a value of type @f a@, we can satisfy the constraint @c (g a)@.
 type Has' (c :: k -> Constraint) f (g :: k' -> k) = Has (ComposeC c g) f
