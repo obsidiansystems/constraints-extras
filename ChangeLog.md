@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## Unreleased
+
+* Support GHC 9.6
+
 ## 0.4.0.0 - 2022-11-18
 
 * Make `Has` from a type synonym into the class upon which everything else is based. Instances may define either `has` or `argDict` which are now both methods of `Has`. This should hopefully improve the readability of type errors involving the library a fair bit, as everything wanted to use `Has`, but it was defined in terms of the less commonly appearing `ArgDict` and `ConstraintsFor`.
