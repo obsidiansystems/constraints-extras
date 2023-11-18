@@ -1,3 +1,12 @@
-{ nixpkgs ? import <nixpkgs> {} }:
-  nixpkgs.haskellPackages.callCabal2nix "constraints-extras" ./. {}
-
+let pkgs = import ./nixpkgs.nix;
+in
+  pkgs.mkShell {
+    name = "constraints-extras";
+    buildInputs = with pkgs; [
+      cabal-install
+      ghcid
+    ];
+    inputsFrom = [
+      (import ./release.nix).env
+    ];
+  }
