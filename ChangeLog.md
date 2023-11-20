@@ -1,8 +1,16 @@
 # Revision history for constraints-extras
 
-## Unreleased
+## 0.4.0.0 revision 2 - 2023-11-20
+
+* Support GHC 9.8
+
+  Bump `base` and `template-haskell` upper bounds
+
+## 0.4.0.0 revision 1 - 2023-05-10
 
 * Support GHC 9.6
+
+  Bump `base` and `template-haskell` upper bounds
 
 ## 0.4.0.0 - 2022-11-18
 
