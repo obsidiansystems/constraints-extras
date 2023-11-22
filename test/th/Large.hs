@@ -1,0 +1,141 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+
+module Large where
+
+import Data.Constraint.Extras.TH (deriveArgDict)
+
+data C1 = C1
+data C2 = C2
+data C3 = C3
+data C4 = C4
+data C5 = C5
+data C6 = C6
+data C7 = C7
+data C8 = C8
+data C9 = C9
+data C10 = C10
+data C11 = C11
+data C12 = C12
+data C13 = C13
+data C14 = C14
+data C15 = C15
+data C16 = C16
+data C17 = C17
+data C18 = C18
+data C19 = C19
+data C20 = C20
+data C21 = C21
+data C22 = C22
+data C23 = C23
+data C24 = C24
+data C25 = C25
+data C26 = C26
+data C27 = C27
+data C28 = C28
+data C29 = C29
+data C30 = C30
+data C31 = C31
+data C32 = C32
+data C33 = C33
+data C34 = C34
+data C35 = C35
+data C36 = C36
+data C37 = C37
+data C38 = C38
+data C39 = C39
+data C40 = C40
+data C41 = C41
+data C42 = C42
+data C43 = C43
+data C44 = C44
+data C45 = C45
+data C46 = C46
+data C47 = C47
+data C48 = C48
+data C49 = C49
+data C50 = C50
+data C51 = C51
+data C52 = C52
+data C53 = C53
+data C54 = C54
+data C55 = C55
+data C56 = C56
+data C57 = C57
+data C58 = C58
+data C59 = C59
+data C60 = C60
+data C61 = C61
+data C62 = C62
+data C63 = C63
+
+data Large a where
+  L1 :: Large C1
+  L2 :: Large C2
+  L3 :: Large C3
+  L4 :: Large C4
+  L5 :: Large C5
+  L6 :: Large C6
+  L7 :: Large C7
+  L8 :: Large C8
+  L9 :: Large C9
+  L10 :: Large C10
+  L11 :: Large C11
+  L12 :: Large C12
+  L13 :: Large C13
+  L14 :: Large C14
+  L15 :: Large C15
+  L16 :: Large C16
+  L17 :: Large C17
+  L18 :: Large C18
+  L19 :: Large C19
+  L20 :: Large C20
+  L21 :: Large C21
+  L22 :: Large C22
+  L23 :: Large C23
+  L24 :: Large C24
+  L25 :: Large C25
+  L26 :: Large C26
+  L27 :: Large C27
+  L28 :: Large C28
+  L29 :: Large C29
+  L30 :: Large C30
+  L31 :: Large C31
+  L32 :: Large C32
+  L33 :: Large C33
+  L34 :: Large C34
+  L35 :: Large C35
+  L36 :: Large C36
+  L37 :: Large C37
+  L38 :: Large C38
+  L39 :: Large C39
+  L40 :: Large C40
+  L41 :: Large C41
+  L42 :: Large C42
+  L43 :: Large C43
+  L44 :: Large C44
+  L45 :: Large C45
+  L46 :: Large C46
+  L47 :: Large C47
+  L48 :: Large C48
+  L49 :: Large C49
+  L50 :: Large C50
+  L51 :: Large C51
+  L52 :: Large C52
+  L53 :: Large C53
+  L54 :: Large C54
+  L55 :: Large C55
+  L56 :: Large C56
+  L57 :: Large C57
+  L58 :: Large C58
+  L59 :: Large C59
+  L60 :: Large C60
+  L61 :: Large C61
+  L62 :: Large C62
+  L63 :: Large C63
+
+deriveArgDict ''Large
