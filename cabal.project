@@ -1,0 +1,35 @@
+packages:
+  .
+
+tests: True
+
+if impl (ghc >= 9.12)
+  constraints:
+    , aeson >= 2
+    
+  allow-newer:
+    , assoc:base
+    , aeson:base
+    , aeson:deepseq
+    , aeson:ghc-prim
+    , aeson:template-haskell
+    , boring:base
+    , data-fix:base
+    , hashable:base
+    , indexed-traversable:base
+    , indexed-traversable-instances:base
+    , integer-conversion:base
+    , integer-logarithms:base
+    , integer-logarithms:ghc-prim
+    , OneTuple:base
+    , scientific:base
+    , scientific:template-haskell
+    , semialign:base
+    , splitmix:base
+    , text-short:base
+    , text-short:ghc-prim
+    , text-short:template-haskell
+    , these:base
+    , time-compat:base
+    , unordered-containers:template-haskell
+    , uuid-types:template-haskell
