@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## 0.4.0.2
+
+* Support GHC 9.12
+
 ## 0.4.0.1
 
 * Support GHC 9.10
