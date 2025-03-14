@@ -23,7 +23,7 @@
 -- >   B :: Tag Bool
 -- > deriving instance Show (Tag a)
 -- >
--- > $(deriveArgDict ''Tag)
+-- > $(deriveHas ''Tag)
 --
 -- The constructors of @Tag@ mean that a type variable @a@ in @Tag a@
 -- must come from the set { @Int@, @Bool@ }. We call this the "set of

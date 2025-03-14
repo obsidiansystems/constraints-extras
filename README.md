@@ -30,25 +30,25 @@ Example usage:
 >   A_a :: A Int
 >   A_b :: Int -> A ()
 >
-> deriveArgDict ''A
+> deriveHas ''A
 >
 > data B :: * -> * where
 >   B_a :: A a -> A a -> B a
 >   B_x :: Int -> B Int
 >
-> deriveArgDict ''B
+> deriveHas ''B
 >
 > data V :: (* -> *) -> * where
 >   V_a :: A Int -> V A
 >
-> deriveArgDict ''V
+> deriveHas ''V
 >
 > data family Fam a :: * -> *
 > data instance Fam () :: * -> * where
 >   FI :: Fam () Int
 >   FB :: Fam () Bool
 >
-> deriveArgDict 'FI
+> deriveHas 'FI
 > -- this derives an instance Has c (Fam ()) by looking up the associated data instance.
 >
 > data DSum k f = forall a. DSum (k a) (f a)

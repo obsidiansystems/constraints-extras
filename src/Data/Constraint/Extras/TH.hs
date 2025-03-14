@@ -3,7 +3,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Constraint.Extras.TH (deriveArgDict, deriveArgDictV, gadtIndices) where
+module Data.Constraint.Extras.TH
+  ( deriveHas
+  , deriveArgDict
+  , deriveArgDictV
+  , gadtIndices
+  ) where
 
 import Data.Constraint
 import Data.Constraint.Extras
@@ -11,8 +16,8 @@ import Data.Maybe
 import Control.Monad
 import Language.Haskell.TH
 
-deriveArgDict :: Name -> Q [Dec]
-deriveArgDict n = do
+deriveHas :: Name -> Q[Dec]
+deriveHas n = do
   (typeHead, constrs) <- getDeclInfo n
   c <- newName "c"
   ts <- gadtIndices c constrs
@@ -25,7 +30,11 @@ deriveArgDict n = do
       [ ValD (VarP 'argDict) (NormalB (LamCaseE ms)) [] ]
     ]
 
-{-# DEPRECATED deriveArgDictV "Just use 'deriveArgDict'" #-}
+{-# DEPRECATED deriveArgDict "Just use 'deriveHas'" #-}
+deriveArgDict :: Name -> Q [Dec]
+deriveArgDict = deriveHas
+
+{-# DEPRECATED deriveArgDictV "Just use 'deriveHas'" #-}
 deriveArgDictV :: Name -> Q [Dec]
 deriveArgDictV = deriveArgDict
 
@@ -55,7 +64,7 @@ matches c constrs argDictName = do
           in [Match (conPCompat name pat) (NormalB $ AppE (VarE argDictName) (VarE v)) []]
     ForallC _ _ (GadtC [name] _ _) -> return $
       [Match (RecP name []) (NormalB $ ConE 'Dict) []]
-    a -> error $ "deriveArgDict matches: Unmatched 'Dec': " ++ show a
+    a -> error $ "deriveHas matches: Unmatched 'Dec': " ++ show a
 
 conPCompat :: Name -> [Pat] -> Pat
 conPCompat name =
