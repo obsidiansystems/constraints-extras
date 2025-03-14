@@ -1,5 +1,9 @@
 # Revision history for constraints-extras
 
+## Unreleased (minor)
+
+* `Data.Constraint.Extras.deriveHas` is now the TH function you should use to derive `Has` instances. `deriveArgDict` remains as a deprecated alias for `deriveHas`.
+
 ## 0.4.0.2
 
 * Support GHC 9.12
